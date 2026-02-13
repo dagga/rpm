@@ -1,90 +1,152 @@
 #!/bin/bash
+# Hyphanet Source Preparation Script for RPM packaging
+set -e
+
 VERSION="0.7.1505"
 BUILD_ID="01505"
 BUILD_DIR="fred-build${BUILD_ID}"
 ARCHIVE_NAME="hyphanet-${VERSION}.tar.gz"
+RPM_SOURCES_DIR="$HOME/rpmbuild/SOURCES"
 
-# Version Wrapper Tanuki
+INSTALL_PATH="/opt/hyphanet"      # Static binaries
+DATA_PATH="/var/lib/hyphanet"     # Dynamic data (datastore, configs)
+LOG_PATH="/var/log/hyphanet"      # Logs
+
 WRAPPER_VER="3.5.51"
 TANUKI_URL="https://download.tanukisoftware.com/wrapper/${WRAPPER_VER}/wrapper-linux-x86-64-${WRAPPER_VER}.tar.gz"
-
-# URL Config (Celle que vous avez validée précédemment)
 CONFIG_URL="https://raw.githubusercontent.com/hyphanet/java_installer/master/res/wrapper.conf"
+SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref"
 
-echo "--- Préparation Hyphanet ${VERSION} (Extraction Interne) ---"
+# JAR Dependency List (Exact versions required for Headless/Crypto/WebUI)
+declare -A JARS
+JARS=(
+    ["bcprov.jar"]="https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar"
+    ["jna.jar"]="https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar"
+    ["jna-platform.jar"]="https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.5.2/jna-platform-4.5.2.jar"
+    ["pebble.jar"]="https://repo1.maven.org/maven2/io/pebbletemplates/pebble/3.1.5/pebble-3.1.5.jar"
+    ["unbescape.jar"]="https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar"
+    ["slf4j-api.jar"]="https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar"
+)
 
+echo "=== Hyphanet Source Generation ==="
+
+# Ensure RPM Sources directory exists
+if [ ! -d "$RPM_SOURCES_DIR" ]; then mkdir -p "$RPM_SOURCES_DIR"; fi
+
+# Clean workspace
 rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}/lib"
 
-# 1. TÉLÉCHARGEMENT FREENET (Base)
-echo "[1/5] Téléchargement Freenet..."
-wget -q "https://github.com/hyphanet/fred/releases/download/build${BUILD_ID}/freenet.jar" -O "${BUILD_DIR}/freenet.jar"
-wget -q "https://github.com/hyphanet/fred/releases/download/build${BUILD_ID}/freenet-ext.jar" -O "${BUILD_DIR}/lib/freenet-ext.jar"
+# 1. DOWNLOADS
+echo "[1/7] Downloading Freenet Core..."
+wget -nv "https://github.com/hyphanet/fred/releases/download/build${BUILD_ID}/freenet.jar" -O "${BUILD_DIR}/freenet.jar"
+wget -nv "https://github.com/hyphanet/fred/releases/download/build${BUILD_ID}/freenet-ext.jar" -O "${BUILD_DIR}/lib/freenet-ext.jar"
 
-if [ ! -s "${BUILD_DIR}/freenet.jar" ]; then echo "ERREUR: freenet.jar manquant"; exit 1; fi
+echo "[2/7] Downloading Dependencies (JNA, Crypto, WebUI)..."
+for jar_name in "${!JARS[@]}"; do
+    echo "   -> $jar_name"
+    wget -nv "${JARS[$jar_name]}" -O "${BUILD_DIR}/lib/$jar_name"
+done
 
-# 2. TÉLÉCHARGEMENT WRAPPER (Tanuki)
-echo "[2/5] Intégration Wrapper Tanuki..."
-wget -q "${TANUKI_URL}" -O "wrapper.tar.gz"
-if [ ! -s "wrapper.tar.gz" ]; then echo "ERREUR: Tanuki inaccessible"; exit 1; fi
-
+echo "[3/7] Downloading Tanuki Wrapper..."
+wget -nv "${TANUKI_URL}" -O "wrapper.tar.gz"
 tar -xzf wrapper.tar.gz
 SRC_W="wrapper-linux-x86-64-${WRAPPER_VER}"
-
+# Extract only necessary files
 cp "${SRC_W}/bin/wrapper" "${BUILD_DIR}/hyphanet-wrapper"
 cp "${SRC_W}/lib/libwrapper.so" "${BUILD_DIR}/lib/libwrapper.so"
 cp "${SRC_W}/lib/wrapper.jar" "${BUILD_DIR}/lib/wrapper.jar"
 rm -rf "${SRC_W}" "wrapper.tar.gz"
 
-# 3. CONFIGURATION
-echo "[3/5] Récupération wrapper.conf..."
-wget -q "${CONFIG_URL}" -O "${BUILD_DIR}/wrapper.conf"
+echo "[4/7] Retrieving Seednodes..."
+wget -nv "${SEEDS_URL}" -O "${BUILD_DIR}/seednodes.fref"
 
-if [ ! -s "${BUILD_DIR}/wrapper.conf" ]; then
-    echo "ERREUR: Impossible de télécharger wrapper.conf depuis java_installer."
-    exit 1
-fi
+# 2. WRAPPER CONFIGURATION
+echo "[5/7] Configuring wrapper.conf..."
+wget -nv "${CONFIG_URL}" -O "${BUILD_DIR}/wrapper.conf"
+CONF="${BUILD_DIR}/wrapper.conf"
 
-# 4. TELECHARGEMENT DES SEEDNODES
+# --- Patching Classpath ---
+# Set the first 3 explicitly to ensure correct loading order
+sed -i "s|wrapper.java.classpath.1=.*|wrapper.java.classpath.1=${INSTALL_PATH}/lib/wrapper.jar|" "$CONF"
+sed -i "s|wrapper.java.classpath.2=.*|wrapper.java.classpath.2=${INSTALL_PATH}/freenet.jar|" "$CONF"
+sed -i "s|wrapper.java.classpath.3=.*|wrapper.java.classpath.3=${INSTALL_PATH}/lib/freenet-ext.jar|" "$CONF"
 
-echo "[4/5] Tétéléchargement depuis raw.githubusercontent.com/hyphanet/java_installer/"
-echo "   > Tentative téléchargement depuis hyphanet/java_installer/refs/heads/next/offline/"
-wget -q "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref" -O "${BUILD_DIR}/seednodes.fref"
+# Dynamically add the rest of the JARs
+IDX=4
+for jar_name in "${!JARS[@]}"; do
+    echo "wrapper.java.classpath.$IDX=${INSTALL_PATH}/lib/$jar_name" >> "$CONF"
+    IDX=$((IDX+1))
+done
 
-# 5. ADAPTATION CONFIGURATION & SCRIPTS
-echo "[5/5] Finalisation..."
+# --- Patching Paths & Security ---
+sed -i "s|wrapper.java.library.path.1=.*|wrapper.java.library.path.1=${INSTALL_PATH}/lib|" "$CONF"
+sed -i "s|wrapper.logfile=.*|wrapper.logfile=${LOG_PATH}/wrapper.log|" "$CONF"
 
-# Patch des chemins wrapper.conf
-sed -i 's|wrapper.java.classpath.1=.*|wrapper.java.classpath.1=lib/wrapper.jar|' "${BUILD_DIR}/wrapper.conf"
-sed -i 's|wrapper.java.classpath.2=.*|wrapper.java.classpath.2=freenet.jar|' "${BUILD_DIR}/wrapper.conf"
-sed -i 's|wrapper.java.classpath.3=.*|wrapper.java.classpath.3=lib/freenet-ext.jar|' "${BUILD_DIR}/wrapper.conf"
-sed -i 's|wrapper.java.library.path.1=.*|wrapper.java.library.path.1=lib|' "${BUILD_DIR}/wrapper.conf"
+# Force the working directory to /var/lib/hyphanet (where the user has write permissions)
+if ! grep -q "wrapper.working.dir" "$CONF"; then echo "wrapper.working.dir=${DATA_PATH}" >> "$CONF"; else sed -i "s|wrapper.working.dir=.*|wrapper.working.dir=${DATA_PATH}|" "$CONF"; fi
+# Move Lock/PID files to /var/lib
+if ! grep -q "wrapper.anchorfile" "$CONF"; then echo "wrapper.anchorfile=${DATA_PATH}/hyphanet.anchor" >> "$CONF"; else sed -i "s|wrapper.anchorfile=.*|wrapper.anchorfile=${DATA_PATH}/hyphanet.anchor|" "$CONF"; fi
+if ! grep -q "wrapper.pidfile" "$CONF"; then echo "wrapper.pidfile=${DATA_PATH}/hyphanet.pid" >> "$CONF"; else sed -i "s|wrapper.pidfile=.*|wrapper.pidfile=${DATA_PATH}/hyphanet.pid|" "$CONF"; fi
+# Force UTF-8 encoding
+if ! grep -q "wrapper.console.encoding" "$CONF"; then echo "wrapper.console.encoding=UTF-8" >> "$CONF"; fi
 
-# Encodage UTF-8
-if ! grep -q "wrapper.console.encoding" "${BUILD_DIR}/wrapper.conf"; then
-    echo "wrapper.console.encoding=UTF-8" >> "${BUILD_DIR}/wrapper.conf"
-fi
+# 3. GENERATING FREENET.INI (Replicating scripts/1run.sh logic)
+echo "[6/7] Generating freenet.ini (Headless configuration)..."
 
-# Fichier hyphanet.conf
-cat <<EOF > "${BUILD_DIR}/hyphanet.conf"
+cat <<EOF > "${BUILD_DIR}/freenet.ini"
+# Disable auto-updater (Managed by RPM/Package Manager)
 node.updater.enabled=false
-node.install.user=hyphanet
-node.name=Hyphanet-Node-RPM
+# Enable Opennet by default for immediate connectivity
+node.opennet.enabled=true
+node.name=Hyphanet-Node
+# Paths relative to wrapper.working.dir (/var/lib/hyphanet)
+node.install.userDir=.
+node.tempDir=temp
+# FProxy Configuration (WebUI)
+fproxy.enabled=true
+fproxy.port=8888
+fproxy.bindTo=127.0.0.1
+# Logging
+logger.priority=ERROR
+logger.dirname=logs
+# Default Bandwidth Limits (4MB/s)
+node.outputBandwidthLimit=4M
+node.inputBandwidthLimit=4M
+# Load plugins required for basic operation (preventing headless startup hang)
+pluginmanager.loadplugin=JSTUN;KeyUtils;ThawIndexBrowser
 EOF
 
-# Script hyphanet-service
+chmod 644 "${BUILD_DIR}/freenet.ini"
+
+# 4. SERVICE LAUNCHER SCRIPT
+echo "[7/7] Creating service launcher script..."
 cat <<EOS > "${BUILD_DIR}/hyphanet-service"
 #!/bin/bash
-APP_NAME="hyphanet"
-PID_FILE="hyphanet.pid"
-./hyphanet-wrapper wrapper.conf wrapper.pidfile=\$PID_FILE wrapper.daemonize=TRUE
+# Wrapper Launcher Helper
+WRAPPER_CMD="${INSTALL_PATH}/hyphanet-wrapper"
+CONF_FILE="${INSTALL_PATH}/wrapper.conf"
+PID_FILE="${DATA_PATH}/hyphanet.pid"
+
+case "\$1" in
+    'start')
+        # Daemon Mode (Systemd)
+        exec "\$WRAPPER_CMD" "\$CONF_FILE" wrapper.pidfile="\$PID_FILE" wrapper.daemonize=TRUE
+        ;;
+    'console')
+        # Console Mode (Manual Debugging)
+        exec "\$WRAPPER_CMD" "\$CONF_FILE" wrapper.pidfile="\$PID_FILE" wrapper.daemonize=FALSE
+        ;;
+    *)
+        echo "Usage: \$0 {start|console}"; exit 1
+        ;;
+esac
 EOS
 
 chmod +x "${BUILD_DIR}/hyphanet-wrapper"
 chmod +x "${BUILD_DIR}/hyphanet-service"
 
-# Archivage
-tar -czf "${ARCHIVE_NAME}" "${BUILD_DIR}"
-
-echo "---"
-echo "Succès ! Archive ${ARCHIVE_NAME} prête."
+# ARCHIVING
+echo "--- Creating archive in $RPM_SOURCES_DIR ---"
+tar -czf "${RPM_SOURCES_DIR}/${ARCHIVE_NAME}" "${BUILD_DIR}"
+echo "SUCCESS: Archive ready for rpmbuild."
