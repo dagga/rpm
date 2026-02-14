@@ -22,6 +22,7 @@ URL:            https://www.hyphanet.org
 Source0:        hyphanet-%{version}.tar.gz
 
 BuildArch:      x86_64
+# Support for any Java 8+ environment (Headless or Desktop)
 Requires:       (java-headless >= 1.8.0 or java >= 1.8.0)
 Requires:       systemd
 Requires(pre):  shadow-utils
@@ -56,7 +57,7 @@ install -m 644 ./seednodes.fref %{buildroot}%{install_dir}/
 install -m 644 ./wrapper.conf %{buildroot}%{install_dir}/
 install -m 644 ./freenet.ini %{buildroot}%{install_dir}/
 
-# 3. Copy Libraries
+# 3. Copy Libraries / TODO : list each library instead of *.jar
 install -m 644 ./lib/*.jar %{buildroot}%{install_dir}/lib/
 install -m 755 ./lib/libwrapper.so %{buildroot}%{install_dir}/lib/
 
@@ -100,41 +101,4 @@ chmod 750 %{data_dir}
 chmod 750 %{log_dir}
 
 # 2. Create Runtime Directories
-mkdir -p %{data_dir}/temp
-mkdir -p %{data_dir}/logs
-chown -R %{user_name}:%{user_name} %{data_dir}/temp
-chown -R %{user_name}:%{user_name} %{data_dir}/logs
-
-# 3. Initialize Configuration (Only if missing)
-# This allows users to modify config in /var/lib without RPM updates overwriting it.
-for file in seednodes.fref wrapper.conf freenet.ini; do
-    if [ ! -f %{data_dir}/$file ]; then
-        cp %{install_dir}/$file %{data_dir}/
-        chown %{user_name}:%{user_name} %{data_dir}/$file
-        chmod 600 %{data_dir}/$file
-    fi
-done
-
-# 4. Register Service
-%systemd_post hyphanet.service
-
-%preun
-%systemd_preun hyphanet.service
-
-%postun
-%systemd_postun_with_restart hyphanet.service
-
-%files
-%defattr(-,root,root,-)
-# /opt/hyphanet content (Static, read-only for security)
-%dir %{install_dir}
-%{install_dir}/*
-
-# Systemd Unit
-%{_unitdir}/hyphanet.service
-
-# Data Directories (Ownership managed in %post)
-%dir %{data_dir}
-%dir %{log_dir}
-
-%changelog
+mkdir -p
