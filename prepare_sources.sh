@@ -17,17 +17,6 @@ TANUKI_URL="https://download.tanukisoftware.com/wrapper/${WRAPPER_VER}/wrapper-l
 CONFIG_URL="https://raw.githubusercontent.com/hyphanet/java_installer/master/res/wrapper.conf"
 SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref"
 
-# JAR Dependency List
-declare -A JARS
-JARS=(
-    ["bcprov.jar"]="https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar"
-    ["jna.jar"]="https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar"
-    ["jna-platform.jar"]="https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.5.2/jna-platform-4.5.2.jar"
-    ["pebble.jar"]="https://repo1.maven.org/maven2/io/pebbletemplates/pebble/3.1.5/pebble-3.1.5.jar"
-    ["unbescape.jar"]="https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar"
-    ["slf4j-api.jar"]="https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar"
-)
-
 # Ensure RPM Sources directory exists
 if [ ! -d "$RPM_SOURCES_DIR" ]; then mkdir -p "$RPM_SOURCES_DIR"; fi
 
@@ -82,13 +71,17 @@ echo "wrapper.java.classpath.9=${INSTALL_PATH}/lib/slf4j-api.jar" >> "$CONF"
 sed -i "s|wrapper.java.library.path.1=.*|wrapper.java.library.path.1=${INSTALL_PATH}/lib|" "$CONF"
 sed -i "s|wrapper.logfile=.*|wrapper.logfile=${LOG_PATH}/wrapper.log|" "$CONF"
 
-# TODO: remove this hacks if possible
-# Force the working directory to /var/lib/hyphanet (where the user has write permissions)
-if ! grep -q "wrapper.working.dir" "$CONF"; then echo "wrapper.working.dir=${DATA_PATH}" >> "$CONF"; else sed -i "s|wrapper.working.dir=.*|wrapper.working.dir=${DATA_PATH}|" "$CONF"; fi
-# Move Lock/PID files to /var/lib
-if ! grep -q "wrapper.anchorfile" "$CONF"; then echo "wrapper.anchorfile=${DATA_PATH}/hyphanet.anchor" >> "$CONF"; else sed -i "s|wrapper.anchorfile=.*|wrapper.anchorfile=${DATA_PATH}/hyphanet.anchor|" "$CONF"; fi
-if ! grep -q "wrapper.pidfile" "$CONF"; then echo "wrapper.pidfile=${DATA_PATH}/hyphanet.pid" >> "$CONF"; else sed -i "s|wrapper.pidfile=.*|wrapper.pidfile=${DATA_PATH}/hyphanet.pid|" "$CONF"; fi
-# Force UTF-8 encoding
+# CRITICAL FIX: Force absolute paths for RPM/Systemd usage
+# We use 'sed -i' unconditionally to overwrite existing values (like "../")
+
+# Force working dir to /var/lib/hyphanet
+sed -i "s|wrapper.working.dir=.*|wrapper.working.dir=${DATA_PATH}|" "$CONF"
+
+# Force Anchor and PID files to /var/lib/hyphanet
+sed -i "s|wrapper.anchorfile=.*|wrapper.anchorfile=${DATA_PATH}/hyphanet.anchor|" "$CONF"
+sed -i "s|wrapper.pidfile=.*|wrapper.pidfile=${DATA_PATH}/hyphanet.pid|" "$CONF"
+
+# Force UTF-8 encoding (add if missing)
 if ! grep -q "wrapper.console.encoding" "$CONF"; then echo "wrapper.console.encoding=UTF-8" >> "$CONF"; fi
 
 # 3. GENERATING FREENET.INI TODO: using a file
