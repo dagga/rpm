@@ -22,7 +22,7 @@ URL:            https://www.hyphanet.org
 Source0:        hyphanet-%{version}.tar.gz
 
 BuildArch:      x86_64
-Requires:       java-headless >= 11
+Requires:       (java-headless >= 1.8.0 or java >= 1.8.0)
 Requires:       systemd
 Requires(pre):  shadow-utils
 
