@@ -30,8 +30,10 @@ Requires(pre):  shadow-utils
 Hyphanet (formerly Freenet) is a peer-to-peer platform for censorship-resistant
 communication. It uses a decentralized distributed data store to keep and
 deliver information.
-This package includes full dependencies (BouncyCastle, JNA, etc.) and a 
-headless configuration.
+
+After installing the rpm, you must visit: http://localhost:8888/
+and answer some questions there before it will begin trying to connect to
+the network.
 
 %prep
 # Extract archive and enter directory
