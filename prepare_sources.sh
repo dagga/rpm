@@ -14,7 +14,7 @@ LOG_PATH="/var/log/hyphanet"      # Logs
 
 WRAPPER_VER="3.5.51"
 TANUKI_URL="https://download.tanukisoftware.com/wrapper/${WRAPPER_VER}/wrapper-linux-x86-64-${WRAPPER_VER}.tar.gz"
-CONFIG_URL="https://raw.githubusercontent.com/hyphanet/java_installer/master/res/wrapper.conf"
+# CONFIG_URL="https://raw.githubusercontent.com/hyphanet/java_installer/master/res/wrapper.conf"
 SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref"
 
 # Ensure RPM Sources directory exists
@@ -50,39 +50,15 @@ echo "[4/7] Retrieving Seednodes..."
 wget -nv "${SEEDS_URL}" -O "${BUILD_DIR}/seednodes.fref"
 
 # 2. WRAPPER CONFIGURATION
-echo "[5/7] Configuring wrapper.conf..."
-wget -nv "${CONFIG_URL}" -O "${BUILD_DIR}/wrapper.conf"
-CONF="${BUILD_DIR}/wrapper.conf"
+echo "[5/7] Preparing wrapper.conf..."
 
-# Set TODO : remove this hacks if possible
-sed -i "s|wrapper.java.classpath.1=.*|wrapper.java.classpath.1=${INSTALL_PATH}/lib/wrapper.jar|" "$CONF"
-sed -i "s|wrapper.java.classpath.2=.*|wrapper.java.classpath.2=${INSTALL_PATH}/freenet.jar|" "$CONF"
-sed -i "s|wrapper.java.classpath.3=.*|wrapper.java.classpath.3=${INSTALL_PATH}/lib/freenet-ext.jar|" "$CONF"
-
-# add the other JARs
-echo "wrapper.java.classpath.4=${INSTALL_PATH}/lib/bcprov.jar" >> "$CONF"
-echo "wrapper.java.classpath.5=${INSTALL_PATH}/lib/jna.jar" >> "$CONF"
-echo "wrapper.java.classpath.6=${INSTALL_PATH}/lib/jna-platform.jar" >> "$CONF"
-echo "wrapper.java.classpath.7=${INSTALL_PATH}/lib/pebble.jar" >> "$CONF"
-echo "wrapper.java.classpath.8=${INSTALL_PATH}/lib/unbescape.jar" >> "$CONF"
-echo "wrapper.java.classpath.9=${INSTALL_PATH}/lib/slf4j-api.jar" >> "$CONF"
-
-# TODO: remove this hacks if possible
-sed -i "s|wrapper.java.library.path.1=.*|wrapper.java.library.path.1=${INSTALL_PATH}/lib|" "$CONF"
-sed -i "s|wrapper.logfile=.*|wrapper.logfile=${LOG_PATH}/wrapper.log|" "$CONF"
-
-# CRITICAL FIX: Force absolute paths for RPM/Systemd usage
-# We use 'sed -i' unconditionally to overwrite existing values (like "../")
-
-# Force working dir to /var/lib/hyphanet
-sed -i "s|wrapper.working.dir=.*|wrapper.working.dir=${DATA_PATH}|" "$CONF"
-
-# Force Anchor and PID files to /var/lib/hyphanet
-sed -i "s|wrapper.anchorfile=.*|wrapper.anchorfile=${DATA_PATH}/hyphanet.anchor|" "$CONF"
-sed -i "s|wrapper.pidfile=.*|wrapper.pidfile=${DATA_PATH}/hyphanet.pid|" "$CONF"
-
-# Force UTF-8 encoding (add if missing)
-if ! grep -q "wrapper.console.encoding" "$CONF"; then echo "wrapper.console.encoding=UTF-8" >> "$CONF"; fi
+if [ -f "wrapper.conf" ]; then
+    cp "wrapper.conf" "${BUILD_DIR}/wrapper.conf"
+    echo "Done: wrapper.conf copied to build directory."
+else
+    echo "ERROR: Local wrapper.conf not found!"
+    exit 1
+fi
 
 # 3. GENERATING FREENET.INI TODO: using a file
 echo "[6/7] Generating freenet.ini (Headless configuration)..."
