@@ -66,12 +66,6 @@ install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 # Creates a symbolic link /usr/bin/hyphanet pointing to /opt/hyphanet/hyphanet-service
 ln -sf %{install_dir}/hyphanet-service %{buildroot}%{_bindir}/hyphanet
 
-# SAFETY NET: Ensure service script points to the editable config in /var/lib
-# (Even if your local script is correct, this guarantees RPM consistency)
-# TODO : unhack
-sed -i "s|CONF_FILE=.*wrapper.conf.*|CONF_FILE=\"%{data_dir}/wrapper.conf\"|" \
-    %{buildroot}%{install_dir}/hyphanet-service
-
 # --- 4. Systemd Unit (Hardened & Explicit) ---
 cat <<EOF > %{buildroot}%{_unitdir}/hyphanet.service
 [Unit]
