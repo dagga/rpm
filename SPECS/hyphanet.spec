@@ -85,7 +85,7 @@ After=network.target syslog.target
 Type=forking
 User=%{user_name}
 Group=%{user_name}
-# IMPORTANT : Force le dossier de travail et les droits d'écriture explicites
+# IMPORTANT: Enforces the work folder and explicit write permissions
 WorkingDirectory=%{data_dir}
 ReadWritePaths=%{data_dir} %{log_dir}
 
