@@ -2,7 +2,7 @@
 # Hyphanet Source Preparation Script for RPM packaging
 set -e
 
-VERSION="0.7.1505"
+VERSION="0.7"
 BUILD_ID="01505"
 BUILD_DIR="fred-build${BUILD_ID}"
 ARCHIVE_NAME="hyphanet-${VERSION}.tar.gz"
@@ -66,23 +66,8 @@ echo "[5/6] Copying local wrapper.conf..."
 cp "$LOCAL_CONF" "${BUILD_DIR}/wrapper.conf"
 
 # 3. GENERATING FREENET.INI (Headless Default)
-echo "[6/6] Generating freenet.ini..."
-cat <<EOF > "${BUILD_DIR}/freenet.ini"
-node.updater.enabled=false
-node.opennet.enabled=true
-node.name=Hyphanet-Node
-node.install.userDir=.
-node.tempDir=temp
-fproxy.enabled=true
-fproxy.port=8888
-fproxy.bindTo=127.0.0.1
-logger.priority=ERROR
-logger.dirname=logs
-node.outputBandwidthLimit=4M
-node.inputBandwidthLimit=4M
-pluginmanager.loadplugin=JSTUN;KeyUtils;ThawIndexBrowser
-EOF
-chmod 644 "${BUILD_DIR}/freenet.ini"
+echo "[6/6] Copying local freenet.ini..."
+cp "$LOCAL_CONF" "${BUILD_DIR}/freenet.ini"
 
 # 4. SERVICE LAUNCHER SCRIPT
 cat <<EOS > "${BUILD_DIR}/hyphanet-service"

@@ -16,8 +16,8 @@
 %define user_name   hyphanet
 
 Name:           hyphanet
-Version:        0.7.1505
-Release:        1
+Version:        0.7
+Release:        1505.1
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
