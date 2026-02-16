@@ -2,7 +2,7 @@
 # Hyphanet Source Preparation Script for RPM packaging
 set -e
 
-VERSION="0.7.1505"
+VERSION="0.7.5"
 BUILD_ID="01505"
 BUILD_DIR="fred-build${BUILD_ID}"
 ARCHIVE_NAME="hyphanet-${VERSION}.tar.gz"
