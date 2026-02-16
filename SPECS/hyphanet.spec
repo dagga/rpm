@@ -1,7 +1,7 @@
 # ------------------------------------------------------------------------------
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
-# Disable debug info generation (Fix for Fedora 43 / RHEL 9+)
+# Disable debug info generation (Fix for Fedora/RHEL)
 %global debug_package %{nil}
 %global _debugsource_template %{nil}
 %undefine _debugsource_packages
@@ -16,8 +16,8 @@
 %define user_name   hyphanet
 
 Name:           hyphanet
-Version:        0.7
-Release:        1505.2
+Version:        0.7.5+1505
+Release:        1
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
@@ -52,8 +52,6 @@ install -d -m 755 %{buildroot}%{_prefix}/lib/sysusers.d
 install -d -m 755 %{buildroot}%{_bindir}
 
 # --- 2. Copy Files ---
-# Le wrapper.conf ici est celui inclus dans le tar.gz par votre script prepare_sources.sh
-# Il est donc déjà configuré pour /opt/hyphanet et contient la MainClass.
 install -m 644 ./freenet.jar %{buildroot}%{install_dir}/
 install -m 644 ./seednodes.fref %{buildroot}%{install_dir}/
 install -m 644 ./wrapper.conf %{buildroot}%{install_dir}/
@@ -63,13 +61,9 @@ install -m 755 ./lib/libwrapper.so %{buildroot}%{install_dir}/lib/
 install -m 755 ./hyphanet-wrapper %{buildroot}%{install_dir}/
 install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 
-# --- 3. Wrapper Script (Avoids absolute symlink warning) ---
-# Au lieu de 'ln -s', on crée un script relai propre
-cat <<EOF > %{buildroot}%{_bindir}/hyphanet
-#!/bin/sh
-exec %{install_dir}/hyphanet-service "\$@"
-EOF
-chmod 755 %{buildroot}%{_bindir}/hyphanet
+# --- 3. Symlink (CLI) ---
+# Creates a symbolic link /usr/bin/hyphanet pointing to /opt/hyphanet/hyphanet-service
+ln -sf %{install_dir}/hyphanet-service %{buildroot}%{_bindir}/hyphanet
 
 # FIX: Point service script to the editable config in /var/lib
 sed -i "s|CONF_FILE=\"%{install_dir}/wrapper.conf\"|CONF_FILE=\"%{data_dir}/wrapper.conf\"|" \
@@ -146,8 +140,10 @@ fi
 mkdir -p %{data_dir}/temp %{data_dir}/logs
 chown -R %{user_name}:%{user_name} %{data_dir}/temp %{data_dir}/logs
 
+# 5. Service Activation & Auto-start
 %systemd_post hyphanet.service
-# activate when restart
+
+# If fresh install (1), enable and start immediately
 if [ $1 -eq 1 ]; then
     /usr/bin/systemctl enable --now hyphanet.service >/dev/null 2>&1 || :
 fi
