@@ -8,7 +8,7 @@ BUILD_DIR="fred-build${BUILD_ID}"
 ARCHIVE_NAME="hyphanet-${VERSION}.tar.gz"
 RPM_SOURCES_DIR="$HOME/rpmbuild/SOURCES"
 
-# Definition des chemins
+# Path definitions
 INSTALL_PATH="/opt/hyphanet"
 DATA_PATH="/var/lib/hyphanet"
 LOG_PATH="/var/log/hyphanet"
@@ -18,11 +18,11 @@ WRAPPER_VER="3.5.51"
 TANUKI_URL="https://download.tanukisoftware.com/wrapper/${WRAPPER_VER}/wrapper-linux-x86-64-${WRAPPER_VER}.tar.gz"
 SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref"
 
-# Repertoire du script actuel
+# current directory of the script
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LOCAL_CONF="${SCRIPT_DIR}/wrapper.conf"
 
-# Vérification présence wrapper.conf local
+# Check if wrapper.conf is locally present
 if [ ! -f "$LOCAL_CONF" ]; then
     echo "ERREUR : Le fichier 'wrapper.conf' est introuvable dans $SCRIPT_DIR"
     echo "Veuillez créer ce fichier avant de lancer le script."
