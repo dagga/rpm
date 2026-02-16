@@ -147,6 +147,10 @@ mkdir -p %{data_dir}/temp %{data_dir}/logs
 chown -R %{user_name}:%{user_name} %{data_dir}/temp %{data_dir}/logs
 
 %systemd_post hyphanet.service
+# activate when restart
+if [ $1 -eq 1 ]; then
+    /usr/bin/systemctl enable --now hyphanet.service >/dev/null 2>&1 || :
+fi
 
 %preun
 %systemd_preun hyphanet.service
@@ -174,7 +178,3 @@ chown -R %{user_name}:%{user_name} %{data_dir}/temp %{data_dir}/logs
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
-* Sat Feb 14 2026 Nicolas <packager@hyphanet.org> - 0.7.1505-1
-- Initial release
-- Fixed symlink warning
-- Added Systemd ReadWritePaths for strict separation
