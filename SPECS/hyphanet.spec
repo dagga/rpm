@@ -39,7 +39,7 @@ communication.
 %setup -q -n fred-build01505
 
 %build
-# Nothing to compile
+# Nothing to compile (Binaries provided in tarball)
 
 %install
 # --- 1. Directory Structure ---
@@ -51,12 +51,13 @@ install -d -m 750 %{buildroot}%{log_dir}
 install -d -m 755 %{buildroot}%{_prefix}/lib/sysusers.d
 install -d -m 755 %{buildroot}%{_bindir}
 
-# --- 2. Copy Files ---
+# --- 2. Copy Files from Tarball ---
 install -m 644 ./freenet.jar %{buildroot}%{install_dir}/
 install -m 644 ./seednodes.fref %{buildroot}%{install_dir}/
 install -m 644 ./wrapper.conf %{buildroot}%{install_dir}/
 install -m 644 ./freenet.ini %{buildroot}%{install_dir}/
 install -m 644 ./lib/*.jar %{buildroot}%{install_dir}/lib/
+# Binaries/Scripts must be executable (755)
 install -m 755 ./lib/libwrapper.so %{buildroot}%{install_dir}/lib/
 install -m 755 ./hyphanet-wrapper %{buildroot}%{install_dir}/
 install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
@@ -65,8 +66,10 @@ install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 # Creates a symbolic link /usr/bin/hyphanet pointing to /opt/hyphanet/hyphanet-service
 ln -sf %{install_dir}/hyphanet-service %{buildroot}%{_bindir}/hyphanet
 
-# FIX: Point service script to the editable config in /var/lib
-sed -i "s|CONF_FILE=\"%{install_dir}/wrapper.conf\"|CONF_FILE=\"%{data_dir}/wrapper.conf\"|" \
+# SAFETY NET: Ensure service script points to the editable config in /var/lib
+# (Even if your local script is correct, this guarantees RPM consistency)
+# TODO : unhack
+sed -i "s|CONF_FILE=.*wrapper.conf.*|CONF_FILE=\"%{data_dir}/wrapper.conf\"|" \
     %{buildroot}%{install_dir}/hyphanet-service
 
 # --- 4. Systemd Unit (Hardened & Explicit) ---
