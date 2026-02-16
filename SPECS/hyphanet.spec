@@ -17,7 +17,7 @@
 
 Name:           hyphanet
 Version:        0.7
-Release:        1505.1
+Release:        1505.2
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+

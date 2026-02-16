@@ -1,0 +1,16 @@
+#!/bin/bash
+WRAPPER_CMD="${INSTALL_PATH}/hyphanet-wrapper"
+CONF_FILE="${INSTALL_PATH}/wrapper.conf"
+PID_FILE="${DATA_PATH}/hyphanet.pid"
+
+case "\$1" in
+    'start')
+        exec "\$WRAPPER_CMD" "\$CONF_FILE" wrapper.pidfile="\$PID_FILE" wrapper.daemonize=TRUE
+        ;;
+    'console')
+        exec "\$WRAPPER_CMD" "\$CONF_FILE" wrapper.pidfile="\$PID_FILE" wrapper.daemonize=FALSE
+        ;;
+    *)
+        echo "Usage: \$0 {start|console}"; exit 1
+        ;;
+esac

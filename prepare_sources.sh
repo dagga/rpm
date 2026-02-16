@@ -37,11 +37,11 @@ rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}/lib"
 
 # 1. DOWNLOADS
-echo "[1/6] Downloading Hyphanet ..."
+echo "[1/7] Downloading Hyphanet ..."
 wget -nv "https://github.com/hyphanet/fred/releases/download/build${BUILD_ID}/freenet.jar" -O "${BUILD_DIR}/freenet.jar"
 wget -nv "https://github.com/hyphanet/fred/releases/download/build${BUILD_ID}/freenet-ext.jar" -O "${BUILD_DIR}/lib/freenet-ext.jar"
 
-echo "[2/6] Downloading Dependencies..."
+echo "[2/7] Downloading Dependencies..."
 wget -nv "https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar"  -O "${BUILD_DIR}/lib/bcprov.jar"
 wget -nv "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar" -O "${BUILD_DIR}/lib/jna.jar"
 wget -nv "https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.5.2/jna-platform-4.5.2.jar" -O "${BUILD_DIR}/lib/jna-platform.jar"
@@ -49,7 +49,7 @@ wget -nv "https://repo1.maven.org/maven2/io/pebbletemplates/pebble/3.1.5/pebble-
 wget -nv "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar" -O "${BUILD_DIR}/lib/unbescape.jar"
 wget -nv "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar" -O "${BUILD_DIR}/lib/slf4j-api.jar"
 
-echo "[3/6] Downloading Tanuki Wrapper..."
+echo "[3/7] Downloading Tanuki Wrapper..."
 wget -nv "${TANUKI_URL}" -O "wrapper.tar.gz"
 tar -xzf wrapper.tar.gz
 SRC_W="wrapper-linux-x86-64-${WRAPPER_VER}"
@@ -58,36 +58,20 @@ cp "${SRC_W}/lib/libwrapper.so" "${BUILD_DIR}/lib/libwrapper.so"
 cp "${SRC_W}/lib/wrapper.jar" "${BUILD_DIR}/lib/wrapper.jar"
 rm -rf "${SRC_W}" "wrapper.tar.gz"
 
-echo "[4/6] Retrieving Seednodes..."
+echo "[4/7] Retrieving Seednodes..."
 wget -nv "${SEEDS_URL}" -O "${BUILD_DIR}/seednodes.fref"
 
 # 2. COPY LOCAL CONFIGURATION
-echo "[5/6] Copying local wrapper.conf..."
+echo "[5/7] Copying local wrapper.conf..."
 cp "$LOCAL_CONF" "${BUILD_DIR}/wrapper.conf"
 
-# 3. GENERATING FREENET.INI (Headless Default)
-echo "[6/6] Copying local freenet.ini..."
+# 3. COPY LOCAL FREENET.INI (Headless Default)
+echo "[6/7] Copying local freenet.ini..."
 cp "$LOCAL_CONF" "${BUILD_DIR}/freenet.ini"
 
-# 4. SERVICE LAUNCHER SCRIPT
-cat <<EOS > "${BUILD_DIR}/hyphanet-service"
-#!/bin/bash
-WRAPPER_CMD="${INSTALL_PATH}/hyphanet-wrapper"
-CONF_FILE="${INSTALL_PATH}/wrapper.conf"
-PID_FILE="${DATA_PATH}/hyphanet.pid"
-
-case "\$1" in
-    'start')
-        exec "\$WRAPPER_CMD" "\$CONF_FILE" wrapper.pidfile="\$PID_FILE" wrapper.daemonize=TRUE
-        ;;
-    'console')
-        exec "\$WRAPPER_CMD" "\$CONF_FILE" wrapper.pidfile="\$PID_FILE" wrapper.daemonize=FALSE
-        ;;
-    *)
-        echo "Usage: \$0 {start|console}"; exit 1
-        ;;
-esac
-EOS
+# 4. COPY LOCAL SERVICE LAUNCHER SCRIPT
+echo "[7/7] Copying local freenet.ini..."
+cp "$LOCAL_CONF" "${BUILD_DIR}/hyphanet-service"
 
 chmod +x "${BUILD_DIR}/hyphanet-wrapper"
 chmod +x "${BUILD_DIR}/hyphanet-service"
