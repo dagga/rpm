@@ -1,12 +1,12 @@
 # ------------------------------------------------------------------------------
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
-# Disable debug info generation (Fix for Fedora 43 / RHEL 9+) TOD: not sure
+# Disable debug info generation (Fix for Fedora 43 / RHEL 9+)
 %global debug_package %{nil}
 %global _debugsource_template %{nil}
 %undefine _debugsource_packages
 %undefine _debuginfo_packages
-# Disable automatic post-install scripts (like manpage compression)
+# Disable automatic post-install scripts
 %global __os_install_post %{nil}
 
 # Standard path definitions
@@ -17,7 +17,7 @@
 
 Name:           hyphanet
 Version:        0.7.1505
-Release:        0.1_el9
+Release:        1
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
@@ -26,7 +26,7 @@ Source0:        hyphanet-%{version}.tar.gz
 
 BuildArch:      x86_64
 
-# Dependencies: Supports any Java 8+ environment (Server/Headless or Desktop)
+# Dependencies
 Requires:       (java-headless >= 1.8.0 or java >= 1.8.0)
 Requires:       systemd
 Requires(pre):  systemd
@@ -35,16 +35,11 @@ Requires(pre):  systemd
 Hyphanet (formerly Freenet) is a peer-to-peer platform for censorship-resistant
 communication.
 
-After installation:
-1. The service starts automatically.
-2. Go to http://127.0.0.1:8888/ to finalize the configuration.
-3. Configuration files are located in %{data_dir}.
-
 %prep
 %setup -q -n fred-build01505
 
 %build
-# Binaries are pre-compiled. Nothing to compile.
+# Nothing to compile
 
 %install
 # --- 1. Directory Structure ---
@@ -56,28 +51,31 @@ install -d -m 750 %{buildroot}%{log_dir}
 install -d -m 755 %{buildroot}%{_prefix}/lib/sysusers.d
 install -d -m 755 %{buildroot}%{_bindir}
 
-# --- 2. Copy Core Files (Templates) ---
+# --- 2. Copy Files ---
+# Le wrapper.conf ici est celui inclus dans le tar.gz par votre script prepare_sources.sh
+# Il est donc déjà configuré pour /opt/hyphanet et contient la MainClass.
 install -m 644 ./freenet.jar %{buildroot}%{install_dir}/
 install -m 644 ./seednodes.fref %{buildroot}%{install_dir}/
 install -m 644 ./wrapper.conf %{buildroot}%{install_dir}/
 install -m 644 ./freenet.ini %{buildroot}%{install_dir}/
-
-# --- 3. Copy Libraries ---
 install -m 644 ./lib/*.jar %{buildroot}%{install_dir}/lib/
 install -m 755 ./lib/libwrapper.so %{buildroot}%{install_dir}/lib/
-
-# --- 4. Binaries & Scripts ---
 install -m 755 ./hyphanet-wrapper %{buildroot}%{install_dir}/
 install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 
-# Symlink for CLI usage
-ln -s %{install_dir}/hyphanet-service %{buildroot}%{_bindir}/hyphanet
+# --- 3. Wrapper Script (Avoids absolute symlink warning) ---
+# Au lieu de 'ln -s', on crée un script relai propre
+cat <<EOF > %{buildroot}%{_bindir}/hyphanet
+#!/bin/sh
+exec %{install_dir}/hyphanet-service "\$@"
+EOF
+chmod 755 %{buildroot}%{_bindir}/hyphanet
 
 # FIX: Point service script to the editable config in /var/lib
 sed -i "s|CONF_FILE=\"%{install_dir}/wrapper.conf\"|CONF_FILE=\"%{data_dir}/wrapper.conf\"|" \
     %{buildroot}%{install_dir}/hyphanet-service
 
-# --- 5. Systemd Unit (Hardened) ---
+# --- 4. Systemd Unit (Hardened & Explicit) ---
 cat <<EOF > %{buildroot}%{_unitdir}/hyphanet.service
 [Unit]
 Description=Hyphanet Node
@@ -87,9 +85,15 @@ After=network.target syslog.target
 Type=forking
 User=%{user_name}
 Group=%{user_name}
+# IMPORTANT : Force le dossier de travail et les droits d'écriture explicites
+WorkingDirectory=%{data_dir}
+ReadWritePaths=%{data_dir} %{log_dir}
+
 ExecStart=%{install_dir}/hyphanet-service start
 Restart=on-failure
 PIDFile=%{data_dir}/hyphanet.pid
+
+# Securite
 ProtectHome=true
 ProtectSystem=full
 PrivateTmp=true
@@ -100,7 +104,7 @@ PrivateDevices=true
 WantedBy=multi-user.target
 EOF
 
-# --- 6. User Declaration (sysusers.d) ---
+# --- 5. User Declaration ---
 cat <<EOF > %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
 u %{user_name} - "Hyphanet Daemon User" %{data_dir} /sbin/nologin
 EOF
@@ -112,13 +116,11 @@ EOF
 # 1. Apply user configuration
 %sysusers_create_compat %{_prefix}/lib/sysusers.d/hyphanet.conf
 
-# 2. Set ownership for data directories
+# 2. Permissions
 chown -R %{user_name}:%{user_name} %{data_dir}
 chown -R %{user_name}:%{user_name} %{log_dir}
 
-# 3. Initialize Configuration (Explicit Logic - No Loops)
-# Copy templates from /opt to /var/lib only if missing.
-
+# 3. Initialize Configuration (Copy only if missing)
 # -- seednodes.fref --
 if [ ! -f "%{data_dir}/seednodes.fref" ]; then
     cp "%{install_dir}/seednodes.fref" "%{data_dir}/"
@@ -140,7 +142,7 @@ if [ ! -f "%{data_dir}/freenet.ini" ]; then
     chmod 600 "%{data_dir}/freenet.ini"
 fi
 
-# 4. Create Runtime Directories
+# 4. Runtime Dirs
 mkdir -p %{data_dir}/temp %{data_dir}/logs
 chown -R %{user_name}:%{user_name} %{data_dir}/temp %{data_dir}/logs
 
@@ -152,33 +154,27 @@ chown -R %{user_name}:%{user_name} %{data_dir}/temp %{data_dir}/logs
 %postun
 %systemd_postun_with_restart hyphanet.service
 
-# ------------------------------------------------------------------------------
-# FILES SECTION (Recursive Inclusion)
-# ------------------------------------------------------------------------------
 %files
 %defattr(-,root,root,-)
-
-# 1. Main Directory (Recursive)
-# TODO : list the files and remove the "Leaving off %dir tells RPM to include the directory AND all contents. effect"
-# This fixes "Installed but unpackaged files" errors.
+# Main Dir (Recursive)
 %{install_dir}
 
-# 2. System Configuration
+# System Files
 %{_unitdir}/hyphanet.service
 %{_prefix}/lib/sysusers.d/hyphanet.conf
 %{_bindir}/hyphanet
 
-# 3. Data Directories (Empty or owned by user)
+# Data Dirs
 %dir %{data_dir}
 %dir %{log_dir}
 
-# 4. Ghost Files (Managed by %post script)
+# Ghost Files
 %ghost %{data_dir}/freenet.ini
 %ghost %{data_dir}/wrapper.conf
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
-* Sat Feb 14 2026 - 0.7.1505-1
+* Sat Feb 14 2026 Nicolas <packager@hyphanet.org> - 0.7.1505-1
 - Initial release
-- Explicit configuration handling (Linear logic)
-- Recursive file inclusion in %files
+- Fixed symlink warning
+- Added Systemd ReadWritePaths for strict separation
