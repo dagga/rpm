@@ -13,6 +13,7 @@ WRAPPER_VER="3.5.51"
 TANUKI_URL="https://download.tanukisoftware.com/wrapper/${WRAPPER_VER}/wrapper-linux-x86-64-${WRAPPER_VER}.tar.gz"
 SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref"
 
+
 # -----------------------------------------------------------------------------
 # LOCAL FILES DEFINITION
 # -----------------------------------------------------------------------------
@@ -43,6 +44,7 @@ if [ ! -d "$RPM_SOURCES_DIR" ]; then mkdir -p "$RPM_SOURCES_DIR"; fi
 rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}/lib"
 
+
 # -----------------------------------------------------------------------------
 # 1. DOWNLOADS
 # -----------------------------------------------------------------------------
@@ -70,6 +72,7 @@ rm -rf "${SRC_W}" "wrapper.tar.gz"
 echo "[4/5] Retrieving Seednodes..."
 wget -nv "${SEEDS_URL}" -O "${BUILD_DIR}/seednodes.fref"
 
+
 # -----------------------------------------------------------------------------
 # 2. COPY LOCAL FILES
 # -----------------------------------------------------------------------------
@@ -84,10 +87,10 @@ cp "$LOCAL_SYSUSERS" "${BUILD_DIR}/hyphanet.sysusers"
 cp "$LOCAL_DESKTOP" "${BUILD_DIR}/hyphanet.desktop"
 cp "$LOCAL_ICON" "${BUILD_DIR}/hyphanet.png"
 
-
 # Execution permissions
 chmod +x "${BUILD_DIR}/hyphanet-wrapper"
 chmod +x "${BUILD_DIR}/hyphanet-service"
+
 
 # -----------------------------------------------------------------------------
 # 3. ARCHIVING
