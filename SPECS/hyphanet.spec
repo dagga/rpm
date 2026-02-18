@@ -1,4 +1,3 @@
-file_content = """# ------------------------------------------------------------------------------
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
 # Disable debug info generation (Fix for Fedora/RHEL)
@@ -140,5 +139,4 @@ fi
 %ghost %{data_dir}/wrapper.conf
 %ghost %{data_dir}/seednodes.fref
 
-%changelog"""
-write_file(absolutePath="/home/nicolas/IdeaProjects/rpm/SPECS/hyphanet.spec", text=file_content)
+%changelog
