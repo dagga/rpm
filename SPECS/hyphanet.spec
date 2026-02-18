@@ -16,7 +16,7 @@
 
 Name:           hyphanet
 Version:        0.7.5+1505
-Release:        2
+Release:        4
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
@@ -49,6 +49,8 @@ install -d -m 750 %{buildroot}%{data_dir}
 install -d -m 750 %{buildroot}%{log_dir}
 install -d -m 755 %{buildroot}%{_prefix}/lib/sysusers.d
 install -d -m 755 %{buildroot}%{_bindir}
+install -d -m 755 %{buildroot}%{_datadir}/applications
+install -d -m 755 %{buildroot}%{_datadir}/pixmaps
 
 # --- 2. Copy Files from Tarball ---
 install -m 644 ./freenet.jar %{buildroot}%{install_dir}/
@@ -64,6 +66,10 @@ install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 # Install systemd unit and sysusers file
 install -m 644 ./hyphanet.service %{buildroot}%{_unitdir}/hyphanet.service
 install -m 644 ./hyphanet.sysusers %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
+
+# Install desktop file and icon file
+install -m 644 ./hyphanet.desktop %{buildroot}%{_datadir}/applications/hyphanet.desktop
+install -m 644 ./hyphanet.png %{buildroot}%{_datadir}/pixmaps/hyphanet.png
 
 # --- 3. Symlink (CLI) ---
 # Creates a symbolic link /usr/bin/hyphanet pointing to /opt/hyphanet/hyphanet-service
@@ -129,6 +135,8 @@ fi
 %{_unitdir}/hyphanet.service
 %{_prefix}/lib/sysusers.d/hyphanet.conf
 %{_bindir}/hyphanet
+%{_datadir}/applications/hyphanet.desktop
+%{_datadir}/pixmaps/hyphanet.png
 
 # Data Dirs
 %dir %{data_dir}
@@ -140,3 +148,5 @@ fi
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
+* Wed Feb 11 2026 Ton Nom <ton.email@exemple.com> - 0.1
+- Initial build of the package

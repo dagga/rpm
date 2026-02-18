@@ -53,8 +53,28 @@ case "$1" in
             echo "PID file not found. Is it running?"
         fi
         ;;
+    'status')
+        if [ -f "$PID_FILE" ]; then
+            PID=$(cat "$PID_FILE")
+            if [ -n "$PID" ]; then
+                if kill -0 "$PID" 2>/dev/null; then
+                    echo "Hyphanet is running (PID=$PID)."
+                    exit 0
+                else
+                    echo "PID file exists but process is not running."
+                    exit 1
+                fi
+            else
+                echo "PID file is empty."
+                exit 1
+            fi
+        else
+            echo "Hyphanet is not running."
+            exit 3
+        fi
+        ;;
     *)
-        echo "Usage: $0 {start|stop|console}"
+        echo "Usage: $0 {start|stop|status|console}"
         exit 1
         ;;
 esac
