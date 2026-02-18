@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Stop Hyphanet
+Comment=Stop the Hyphanet system service
+Exec=pkexec systemctl stop hyphanet.service
+Icon=hyphanet
+Terminal=false
+Type=Application
+Categories=Network;P2P;

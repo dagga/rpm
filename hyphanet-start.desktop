@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Start Hyphanet
+Comment=Start the Hyphanet system service
+Exec=pkexec systemctl start hyphanet.service
+Icon=hyphanet
+Terminal=false
+Type=Application
+Categories=Network;P2P;
