@@ -20,8 +20,41 @@ case "$1" in
     'console')
         exec "$WRAPPER_CMD" -c "$CONF_FILE" wrapper.pidfile="$PID_FILE" wrapper.daemonize=FALSE
         ;;
+    'stop')
+        if [ -f "$PID_FILE" ]; then
+            PID=$(cat "$PID_FILE")
+            if [ -n "$PID" ]; then
+                echo "Stopping Hyphanet (PID=$PID)..."
+                # Send SIGTERM to allow graceful shutdown
+                kill -TERM "$PID" 2>/dev/null
+
+                # Wait loop (up to 1 minutes)
+                TIMEOUT=60
+                ELAPSED=0
+                while kill -0 "$PID" 2>/dev/null; do
+                    sleep 1
+                    ELAPSED=$((ELAPSED+1))
+                    if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+                        echo "Timeout reached ($TIMEOUT s). Force killing..."
+                        kill -KILL "$PID" 2>/dev/null
+                        break
+                    fi
+                    # Feedback every 10 seconds
+                    if [ $((ELAPSED % 10)) -eq 0 ]; then
+                        echo -n "."
+                    fi
+                done
+                echo "Stopped."
+            else
+                echo "PID file empty."
+            fi
+            rm -f "$PID_FILE"
+        else
+            echo "PID file not found. Is it running?"
+        fi
+        ;;
     *)
-        echo "Usage: $0 {start|console}"
+        echo "Usage: $0 {start|stop|console}"
         exit 1
         ;;
 esac
