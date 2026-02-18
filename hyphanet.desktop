@@ -6,3 +6,11 @@ Icon=hyphanet
 Terminal=false
 Type=Application
 Categories=Network;P2P;
+Actions=start;stop;
+[Desktop Action start]
+Name=Start Hyphanet
+Exec=pkexec systemctl start hyphanet.service
+
+[Desktop Action stop]
+Name=Stop Hyphanet
+Exec=pkexec systemctl stop hyphanet.service
