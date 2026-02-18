@@ -1,0 +1,25 @@
+[Unit]
+Description=Hyphanet Node
+After=network.target syslog.target
+
+[Service]
+Type=forking
+User=hyphanet
+Group=hyphanet
+# IMPORTANT: Enforces the work folder and explicit write permissions
+WorkingDirectory=/var/lib/hyphanet
+ReadWritePaths=/var/lib/hyphanet /var/log/hyphanet
+
+ExecStart=/opt/hyphanet/hyphanet-service start
+Restart=on-failure
+PIDFile=/var/lib/hyphanet/hyphanet.pid
+
+# Securite
+ProtectHome=true
+ProtectSystem=full
+PrivateTmp=true
+NoNewPrivileges=true
+PrivateDevices=true
+
+[Install]
+WantedBy=multi-user.target

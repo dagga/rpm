@@ -18,16 +18,18 @@ SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/
 # -----------------------------------------------------------------------------
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Define the 3 distinct source files
+# Define the 5 distinct source files
 LOCAL_WRAPPER="${SCRIPT_DIR}/wrapper.conf"
 LOCAL_INI="${SCRIPT_DIR}/freenet.ini"
-LOCAL_SERVICE="${SCRIPT_DIR}/hyphanet-service"
+LOCAL_SERVICE_SCRIPT="${SCRIPT_DIR}/hyphanet-service"
+LOCAL_SYSTEMD_UNIT="${SCRIPT_DIR}/hyphanet.service"
+LOCAL_SYSUSERS="${SCRIPT_DIR}/hyphanet.sysusers"
 
-# Security check: All 3 files must exist
-for file in "$LOCAL_WRAPPER" "$LOCAL_INI" "$LOCAL_SERVICE"; do
+# Security check: All 5 files must exist
+for file in "$LOCAL_WRAPPER" "$LOCAL_INI" "$LOCAL_SERVICE_SCRIPT" "$LOCAL_SYSTEMD_UNIT" "$LOCAL_SYSUSERS"; do
     if [ ! -f "$file" ]; then
         echo "CRITICAL ERROR: Source file not found -> $file"
-        echo "Please verify that wrapper.conf, freenet.ini, and hyphanet-service are located in $SCRIPT_DIR"
+        echo "Please verify that all source files are located in $SCRIPT_DIR"
         exit 1
     fi
 done
@@ -74,7 +76,10 @@ echo "[5/5] Copying local configuration files..."
 # Copy each file to its respective destination
 cp "$LOCAL_WRAPPER" "${BUILD_DIR}/wrapper.conf"
 cp "$LOCAL_INI"     "${BUILD_DIR}/freenet.ini"
-cp "$LOCAL_SERVICE" "${BUILD_DIR}/hyphanet-service"
+cp "$LOCAL_SERVICE_SCRIPT" "${BUILD_DIR}/hyphanet-service"
+cp "$LOCAL_SYSTEMD_UNIT" "${BUILD_DIR}/hyphanet.service"
+cp "$LOCAL_SYSUSERS" "${BUILD_DIR}/hyphanet.sysusers"
+
 
 # Execution permissions
 chmod +x "${BUILD_DIR}/hyphanet-wrapper"

@@ -1,4 +1,4 @@
-# ------------------------------------------------------------------------------
+file_content = """# ------------------------------------------------------------------------------
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
 # Disable debug info generation (Fix for Fedora/RHEL)
@@ -62,43 +62,13 @@ install -m 755 ./lib/libwrapper.so %{buildroot}%{install_dir}/lib/
 install -m 755 ./hyphanet-wrapper %{buildroot}%{install_dir}/
 install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 
+# Install systemd unit and sysusers file
+install -m 644 ./hyphanet.service %{buildroot}%{_unitdir}/hyphanet.service
+install -m 644 ./hyphanet.sysusers %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
+
 # --- 3. Symlink (CLI) ---
 # Creates a symbolic link /usr/bin/hyphanet pointing to /opt/hyphanet/hyphanet-service
 ln -sf %{install_dir}/hyphanet-service %{buildroot}%{_bindir}/hyphanet
-
-# --- 4. Systemd Unit (Hardened & Explicit) ---
-cat <<EOF > %{buildroot}%{_unitdir}/hyphanet.service
-[Unit]
-Description=Hyphanet Node
-After=network.target syslog.target
-
-[Service]
-Type=forking
-User=%{user_name}
-Group=%{user_name}
-# IMPORTANT: Enforces the work folder and explicit write permissions
-WorkingDirectory=%{data_dir}
-ReadWritePaths=%{data_dir} %{log_dir}
-
-ExecStart=%{install_dir}/hyphanet-service start
-Restart=on-failure
-PIDFile=%{data_dir}/hyphanet.pid
-
-# Securite
-ProtectHome=true
-ProtectSystem=full
-PrivateTmp=true
-NoNewPrivileges=true
-PrivateDevices=true
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-# --- 5. User Declaration ---
-cat <<EOF > %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
-u %{user_name} - "Hyphanet Daemon User" %{data_dir} /sbin/nologin
-EOF
 
 %pre
 # Managed by sysusers
@@ -170,4 +140,5 @@ fi
 %ghost %{data_dir}/wrapper.conf
 %ghost %{data_dir}/seednodes.fref
 
-%changelog
+%changelog"""
+write_file(absolutePath="/home/nicolas/IdeaProjects/rpm/SPECS/hyphanet.spec", text=file_content)
