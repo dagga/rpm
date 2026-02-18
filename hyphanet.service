@@ -11,6 +11,8 @@ WorkingDirectory=/var/lib/hyphanet
 ReadWritePaths=/var/lib/hyphanet /var/log/hyphanet
 
 ExecStart=/opt/hyphanet/hyphanet-service start
+ExecStop=/opt/hyphanet/hyphanet-service stop
+TimeoutStopSec=60
 Restart=on-failure
 PIDFile=/var/lib/hyphanet/hyphanet.pid
 
