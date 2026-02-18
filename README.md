@@ -17,7 +17,7 @@ rpmbuild -ba SPECS/hyphanet.spec
 
 ## Install / Uninstall 
 ```bash
-sudo dnf install RPMS/x86_64/hyphanet-0.7.1505-1.x86_64.rpm
+sudo dnf install RPMS/x86_64/hyphanet-0.xxxxxxxxxxx.rpm
 sudo dnf remove hyphanet
 ```
 
