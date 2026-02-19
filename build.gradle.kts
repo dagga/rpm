@@ -5,7 +5,9 @@ plugins {
     base
 }
 
-val rpmBuildRoot = layout.projectDirectory.dir("rpmbuild")
+// The project root IS the rpmbuild root
+val rpmBuildRoot = layout.projectDirectory
+
 val downloadsDir = layout.buildDirectory.dir("downloads")
 
 // Configuration des téléchargements
@@ -147,12 +149,7 @@ tasks.register<Exec>("buildRpm") {
         specFile.absolutePath
     )
     
-    doLast {
-        copy {
-            from(rpmBuildRoot.dir("RPMS/x86_64"))
-            into(layout.projectDirectory.dir("RPMS/x86_64"))
-        }
-    }
+    // No need to copy files, they are already in ./RPMS/x86_64/
 }
 
 tasks.named("build") {
@@ -161,8 +158,14 @@ tasks.named("build") {
 
 tasks.named("clean") {
     doLast {
-        delete(rpmBuildRoot)
-        delete(layout.projectDirectory.dir("RPMS"))
-        delete(downloadsDir)
+        // Clean up generated directories
+        delete(rpmBuildRoot.dir("SOURCES"))
+        delete(rpmBuildRoot.dir("RPMS"))
+        delete(rpmBuildRoot.dir("SRPMS"))
+        delete(rpmBuildRoot.dir("BUILD"))
+        delete(rpmBuildRoot.dir("BUILDROOT"))
+        
+        // Clean up Gradle build dir
+        delete(layout.buildDirectory)
     }
 }

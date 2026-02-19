@@ -1,7 +1,6 @@
 #!/bin/bash
 # Hyphanet Source Preparation Script for RPM packaging
-# This script expects external assets to be provided in a directory
-# This script must be run by the Gradle 'prepareSources' task.
+# This script now expects external assets to be provided in a directory
 # specified by the DOWNLOADS_DIR environment variable.
 set -e
 
@@ -13,12 +12,14 @@ ARCHIVE_NAME="hyphanet-${VERSION}.tar.gz"
 
 # --- Paths ---
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-RPM_BUILD_ROOT="${SCRIPT_DIR}/rpmbuild"
+# RPM Build Root is now the project root itself
+RPM_BUILD_ROOT="${SCRIPT_DIR}"
 RPM_SOURCES_DIR="${RPM_BUILD_ROOT}/SOURCES"
 
 # Check if DOWNLOADS_DIR is set
 if [ -z "$DOWNLOADS_DIR" ]; then
     echo "CRITICAL ERROR: DOWNLOADS_DIR environment variable is not set."
+    echo "This script must be run by the Gradle 'prepareSources' task."
     exit 1
 fi
 
