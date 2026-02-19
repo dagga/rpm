@@ -16,6 +16,12 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y rpm gnupg2 wget
 
@@ -51,9 +57,7 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
-          # IMPORTANT: Replace with your actual GPG key name/email
-          GPG_KEY_NAME="Your name (comment) <your.email@example.com>"
-          echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
+          echo "%_gpg_name ${{ secrets.GPG_KEY_NAME }}" > ~/.rpmmacros
 
       - name: Sign the RPM package
         # This step only runs on pushes to the main branch.

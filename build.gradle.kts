@@ -18,8 +18,9 @@ val artifacts = listOf(
     Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build01505/freenet-ext.jar", ""),
 
     // Dependencies
-    Downloadable("bcprov.jar", "https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar", "2537a509d48d686c8753029197e2530743a232e596c46976142456a532b53930"),
-    Downloadable("jna.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar", "e7d44528148b1d9366415276329495543972685a6f369d1343844697956b5d49"),
+    Downloadable("bcprov.jar", "https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar", "1c31e44e331d25e46d293b3e8ee2d07028a67db011e74cb2443285aed1d59c85"),
+    // Updated hash for jna.jar
+    Downloadable("jna.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar", "0c8eb7acf67261656d79005191debaba3b6bf5dd60a43735a245429381dbecff"),
     Downloadable("jna-platform.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.5.2/jna-platform-4.5.2.jar", "064434d6d205668b240e2e8966d486d348527e6a2c91d265a606c795b2c2b338"),
     Downloadable("pebble.jar", "https://repo1.maven.org/maven2/io/pebbletemplates/pebble/3.1.5/pebble-3.1.5.jar", "f264e9681878396913160d195799989182318c5585698e590401137b17a26c25"),
     Downloadable("unbescape.jar", "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar", "7b90360afb2b86024a558c8ea6894811065857255661d3876188b7617a4a9749"),
