@@ -2,12 +2,7 @@ plugins {
     base
 }
 
-val rpmBuildDir = layout.buildDirectory.dir("rpmbuild")
-val sourcesDir = rpmBuildDir.map { it.dir("SOURCES") }
-val specsDir = rpmBuildDir.map { it.dir("SPECS") }
-val rpmsDir = rpmBuildDir.map { it.dir("RPMS") }
-val srpmsDir = rpmBuildDir.map { it.dir("SRPMS") }
-val buildDir = rpmBuildDir.map { it.dir("BUILD") }
+val rpmBuildRoot = layout.projectDirectory.dir("rpmbuild")
 
 tasks.register<Exec>("prepareSources") {
     group = "rpm"
@@ -20,7 +15,6 @@ tasks.register<Exec>("prepareSources") {
 
     commandLine("./prepare_sources.sh")
     
-    // Define inputs and outputs for incremental build support
     inputs.files(
         "prepare_sources.sh",
         "wrapper.conf",
@@ -35,9 +29,7 @@ tasks.register<Exec>("prepareSources") {
         "org.hyphanet.service.policy"
     )
     
-    // The script puts the tarball in ~/rpmbuild/SOURCES by default, 
-    // we might want to change that or just track it.
-    // For now, let's assume the script uses the default location.
+    outputs.dir(rpmBuildRoot.dir("SOURCES"))
 }
 
 tasks.register<Exec>("buildRpm") {
@@ -47,7 +39,23 @@ tasks.register<Exec>("buildRpm") {
 
     val specFile = file("SPECS/hyphanet.spec")
     
-    commandLine("rpmbuild", "-ba", specFile.absolutePath)
+    // Define the topdir for rpmbuild to keep everything inside the project
+    val topDir = rpmBuildRoot.asFile.absolutePath
+    
+    commandLine(
+        "/usr/bin/rpmbuild",
+        "-ba",
+        "--define", "_topdir ${topDir}",
+        specFile.absolutePath
+    )
+    
+    doLast {
+        // Copy the final RPM to the root for easy access
+        copy {
+            from(rpmBuildRoot.dir("RPMS/x86_64"))
+            into(layout.projectDirectory.dir("RPMS/x86_64"))
+        }
+    }
 }
 
 tasks.named("build") {
@@ -56,8 +64,7 @@ tasks.named("build") {
 
 tasks.named("clean") {
     doLast {
-        delete(layout.buildDirectory)
-        // Also clean up the default rpmbuild directory if needed, 
-        // but be careful not to delete user's other RPMs.
+        delete(rpmBuildRoot)
+        delete(layout.projectDirectory.dir("RPMS"))
     }
 }

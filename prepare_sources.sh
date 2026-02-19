@@ -6,7 +6,11 @@ VERSION="0.7.5+1505"
 BUILD_ID="01505"
 BUILD_DIR="fred-build${BUILD_ID}"
 ARCHIVE_NAME="hyphanet-${VERSION}.tar.gz"
-RPM_SOURCES_DIR="$HOME/rpmbuild/SOURCES"
+
+# Use local rpmbuild directory structure
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+RPM_BUILD_ROOT="${SCRIPT_DIR}/rpmbuild"
+RPM_SOURCES_DIR="${RPM_BUILD_ROOT}/SOURCES"
 
 # URLs
 WRAPPER_VER="3.5.51"
@@ -16,9 +20,8 @@ SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/
 # -----------------------------------------------------------------------------
 # LOCAL FILES DEFINITION
 # -----------------------------------------------------------------------------
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Define the 10 distinct source files
+# Define the 7 distinct source files
 LOCAL_WRAPPER="${SCRIPT_DIR}/wrapper.conf"
 LOCAL_INI="${SCRIPT_DIR}/freenet.ini"
 LOCAL_SERVICE_SCRIPT="${SCRIPT_DIR}/hyphanet-service"
@@ -100,4 +103,4 @@ chmod +x "${BUILD_DIR}/hyphanet-service"
 # -----------------------------------------------------------------------------
 echo "--- Creating archive in $RPM_SOURCES_DIR ---"
 tar -czf "${RPM_SOURCES_DIR}/${ARCHIVE_NAME}" "${BUILD_DIR}"
-echo "SUCCESS: Archive created properly."
+echo "SUCCESS: Archive created properly in $RPM_SOURCES_DIR"
