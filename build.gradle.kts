@@ -10,7 +10,7 @@ val rpmBuildRoot = layout.projectDirectory
 
 val downloadsDir = layout.buildDirectory.dir("downloads")
 
-// Configuration des téléchargements
+// Download setup
 data class Downloadable(val name: String, val url: String, val sha256: String)
 
 val artifacts = listOf(
@@ -148,9 +148,7 @@ tasks.register<Exec>("buildRpm") {
         "--define", "_topdir ${topDir}",
         specFile.absolutePath
     )
-    
-    // No need to copy files, they are already in ./RPMS/x86_64/
-}
+    }
 
 tasks.named("build") {
     dependsOn("buildRpm")
