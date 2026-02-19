@@ -13,13 +13,12 @@ WRAPPER_VER="3.5.51"
 TANUKI_URL="https://download.tanukisoftware.com/wrapper/${WRAPPER_VER}/wrapper-linux-x86-64-${WRAPPER_VER}.tar.gz"
 SEEDS_URL="https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref"
 
-
 # -----------------------------------------------------------------------------
 # LOCAL FILES DEFINITION
 # -----------------------------------------------------------------------------
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Define the 7 distinct source files
+# Define the 10 distinct source files
 LOCAL_WRAPPER="${SCRIPT_DIR}/wrapper.conf"
 LOCAL_INI="${SCRIPT_DIR}/freenet.ini"
 LOCAL_SERVICE_SCRIPT="${SCRIPT_DIR}/hyphanet-service"
@@ -27,9 +26,12 @@ LOCAL_SYSTEMD_UNIT="${SCRIPT_DIR}/hyphanet.service"
 LOCAL_SYSUSERS="${SCRIPT_DIR}/hyphanet.sysusers"
 LOCAL_DESKTOP="${SCRIPT_DIR}/hyphanet.desktop"
 LOCAL_ICON="${SCRIPT_DIR}/hyphanet.png"
+LOCAL_START_DESKTOP="${SCRIPT_DIR}/hyphanet-start.desktop"
+LOCAL_STOP_DESKTOP="${SCRIPT_DIR}/hyphanet-stop.desktop"
+LOCAL_POLICY="${SCRIPT_DIR}/org.hyphanet.service.policy"
 
-# Security check: All 7 files must exist
-for file in "$LOCAL_WRAPPER" "$LOCAL_INI" "$LOCAL_SERVICE_SCRIPT" "$LOCAL_SYSTEMD_UNIT" "$LOCAL_SYSUSERS" "$LOCAL_DESKTOP" "$LOCAL_ICON"; do
+# Security check: All 10 files must exist
+for file in "$LOCAL_WRAPPER" "$LOCAL_INI" "$LOCAL_SERVICE_SCRIPT" "$LOCAL_SYSTEMD_UNIT" "$LOCAL_SYSUSERS" "$LOCAL_DESKTOP" "$LOCAL_ICON" "$LOCAL_START_DESKTOP" "$LOCAL_STOP_DESKTOP" "$LOCAL_POLICY"; do
     if [ ! -f "$file" ]; then
         echo "CRITICAL ERROR: Source file not found -> $file"
         echo "Please verify that all source files are located in $SCRIPT_DIR"
@@ -43,7 +45,6 @@ if [ ! -d "$RPM_SOURCES_DIR" ]; then mkdir -p "$RPM_SOURCES_DIR"; fi
 # Clean workspace
 rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}/lib"
-
 
 # -----------------------------------------------------------------------------
 # 1. DOWNLOADS
@@ -72,7 +73,6 @@ rm -rf "${SRC_W}" "wrapper.tar.gz"
 echo "[4/5] Retrieving Seednodes..."
 wget -nv "${SEEDS_URL}" -O "${BUILD_DIR}/seednodes.fref"
 
-
 # -----------------------------------------------------------------------------
 # 2. COPY LOCAL FILES
 # -----------------------------------------------------------------------------
@@ -86,11 +86,14 @@ cp "$LOCAL_SYSTEMD_UNIT" "${BUILD_DIR}/hyphanet.service"
 cp "$LOCAL_SYSUSERS" "${BUILD_DIR}/hyphanet.sysusers"
 cp "$LOCAL_DESKTOP" "${BUILD_DIR}/hyphanet.desktop"
 cp "$LOCAL_ICON" "${BUILD_DIR}/hyphanet.png"
+cp "$LOCAL_START_DESKTOP" "${BUILD_DIR}/hyphanet-start.desktop"
+cp "$LOCAL_STOP_DESKTOP" "${BUILD_DIR}/hyphanet-stop.desktop"
+cp "$LOCAL_POLICY" "${BUILD_DIR}/org.hyphanet.service.policy"
+
 
 # Execution permissions
 chmod +x "${BUILD_DIR}/hyphanet-wrapper"
 chmod +x "${BUILD_DIR}/hyphanet-service"
-
 
 # -----------------------------------------------------------------------------
 # 3. ARCHIVING
