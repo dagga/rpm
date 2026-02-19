@@ -13,24 +13,23 @@ data class Downloadable(val name: String, val url: String, val sha256: String)
 
 val artifacts = listOf(
     // Hyphanet JARs and Signature
-    Downloadable("freenet.jar", "https://github.com/hyphanet/fred/releases/download/build01505/freenet.jar", ""),
-    Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build01505/freenet-build01505.jar.sig", ""),
-    Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build01505/freenet-ext.jar", ""),
+    Downloadable("freenet.jar", "https://github.com/hyphanet/fred/releases/download/build01505/freenet.jar", "e8f49d90e49886aa7d4b56d3aaf21cf41e2b862120782d3992c29679160b5c7a"),
+    Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build01505/freenet-build01505.jar.sig", "a611b164ac4ba0dd378be8de155e064653e370332f129050a5018db88d06dc62"),
+    Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build01505/freenet-ext.jar", "32f2b3d6beedf54137ea2f9a3ebef67666d769f0966b08cd17fd7db59ba4d79f"),
 
     // Dependencies
     Downloadable("bcprov.jar", "https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar", "1c31e44e331d25e46d293b3e8ee2d07028a67db011e74cb2443285aed1d59c85"),
-    // Updated hash for jna.jar
     Downloadable("jna.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar", "0c8eb7acf67261656d79005191debaba3b6bf5dd60a43735a245429381dbecff"),
-    Downloadable("jna-platform.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.5.2/jna-platform-4.5.2.jar", "064434d6d205668b240e2e8966d486d348527e6a2c91d265a606c795b2c2b338"),
-    Downloadable("pebble.jar", "https://repo1.maven.org/maven2/io/pebbletemplates/pebble/3.1.5/pebble-3.1.5.jar", "f264e9681878396913160d195799989182318c5585698e590401137b17a26c25"),
-    Downloadable("unbescape.jar", "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar", "7b90360afb2b86024a558c8ea6894811065857255661d3876188b7617a4a9749"),
-    Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b814472412a81381759b645207231d299784df9a0619d051"),
+    Downloadable("jna-platform.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.5.2/jna-platform-4.5.2.jar", "f1d00c167d8921c6e23c626ef9f1c3ae0be473c95c68ffa012bc7ae55a87e2d6"),
+    Downloadable("pebble.jar", "https://repo1.maven.org/maven2/io/pebbletemplates/pebble/3.1.5/pebble-3.1.5.jar", "d253a6dde59e138698aaaaee546461d2f1f6c8bd2aa38ecdd347df17cf90d6f0"),
+    Downloadable("unbescape.jar", "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar", "597cf87d5b1a4f385b9d1cec974b7b483abb3ee85fc5b3f8b62af8e4bec95c2c"),
+    Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79"),
 
     // Wrapper
-    Downloadable("wrapper.tar.gz", "https://download.tanukisoftware.com/wrapper/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", ""),
+    Downloadable("wrapper.tar.gz", "https://download.tanukisoftware.com/wrapper/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
 
     // Seednodes
-    Downloadable("seednodes.fref", "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref", "")
+    Downloadable("seednodes.fref", "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref", "1dc8da78a0062ae1796465c65f3b44e4277a06469c16921689fb2b7923281fff")
 )
 
 tasks.register("downloadAssets") {
