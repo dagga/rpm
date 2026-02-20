@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>hyphanet.desktop</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0+</project_license>
+  <name>Hyphanet</name>
+  <summary>Anonymizing peer-to-peer network</summary>
+  <description>
+    <p>
+      Hyphanet (formerly Freenet) is a peer-to-peer platform for censorship-resistant communication.
+      It uses a decentralized distributed data store to keep and deliver information, and has a suite of free software for publishing and communicating on the Web without fear of censorship.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Browse websites anonymously</li>
+      <li>Publish your own websites (Freesites)</li>
+      <li>Chat on forums and message boards</li>
+      <li>Share files securely</li>
+      <li>Decentralized and censorship-resistant</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">hyphanet.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/hyphanet/wiki/master/images/screenshots/fproxy_welcome.png</image>
+      <caption>The Hyphanet Web Interface (FProxy)</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/hyphanet/wiki/master/images/screenshots/fproxy_browse.png</image>
+      <caption>Browsing a Freesite</caption>
+    </screenshot>
+  </screenshots>
+  <url type="homepage">https://www.hyphanet.org</url>
+  <url type="bugtracker">https://github.com/hyphanet/fred/issues</url>
+  <url type="help">https://wiki.hyphanet.org/</url>
+  <provides>
+    <binary>hyphanet</binary>
+  </provides>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.7.5" date="2024-05-01"/>
+  </releases>
+</component>

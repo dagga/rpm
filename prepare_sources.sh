@@ -4,7 +4,7 @@ set -e
 
 # --- Configuration ---
 if [ -z "$APP_VERSION" ] || [ -z "$BUILD_ID" ]; then
-    echo "CRITICAL ERROR: APP_VERSION and BUILD_ID environment variables must be set using gradle."
+    echo "CRITICAL ERROR: APP_VERSION and BUILD_ID environment variables must be set."
     exit 1
 fi
 
@@ -40,6 +40,7 @@ LOCAL_FILES=(
     "${SCRIPT_DIR}/hyphanet-stop.desktop"
     "${SCRIPT_DIR}/hyphanet.png"
     "${SCRIPT_DIR}/org.hyphanet.service.policy"
+    "${SCRIPT_DIR}/org.hyphanet.hyphanet.metainfo.xml"
 )
 
 # --- Security Check ---

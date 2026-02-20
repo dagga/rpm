@@ -1,4 +1,4 @@
-name: CI
+name: Build and Sign RPM
 
 on:
   push:
@@ -9,12 +9,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: recursive
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -23,13 +21,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Install build dependencies
-        run: sudo apt-get update && sudo apt-get install -y rpm gnupg2 wget
-
-      - name: Import Hyphanet Public Key
-        run: |
-          echo "Importing Hyphanet official keyring..."
-          wget https://www.hyphanet.org/assets/keyring.gpg
-          gpg --import keyring.gpg
+        run: sudo apt-get update && sudo apt-get install -y rpm gnupg2
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -43,8 +35,8 @@ jobs:
       - name: Build RPM with Gradle
         run: ./gradlew buildRpm
         
-      - name: Import GPG Key
-        # This step only runs on pushes to the main branch, not on pull requests.
+      - name: Import Signing GPG Key
+        # This step only runs on pushes to the main branch.
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Importing GPG key..."
@@ -57,7 +49,9 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
-          echo "%_gpg_name ${{ secrets.GPG_KEY_NAME }}" > ~/.rpmmacros
+          # IMPORTANT: Replace with your actual GPG key name/email
+          GPG_KEY_NAME="Your name (comment) <your.email@example.com>"
+          echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
 
       - name: Sign the RPM package
         # This step only runs on pushes to the main branch.
@@ -72,7 +66,6 @@ jobs:
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v4
-        if: ${{ github.event_name != 'pull_request' }}
         with:
           name: hyphanet-rpm
           path: ./RPMS/x86_64/*.rpm

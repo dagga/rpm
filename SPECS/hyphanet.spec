@@ -20,7 +20,7 @@
 
 Name:           hyphanet
 Version:        %{version}
-Release:        %{build_id}.5
+Release:        %{build_id}.1
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
@@ -58,6 +58,7 @@ install -d -m 755 %{buildroot}%{_bindir}
 install -d -m 755 %{buildroot}%{_datadir}/applications
 install -d -m 755 %{buildroot}%{_datadir}/pixmaps
 install -d -m 755 %{buildroot}%{_datadir}/polkit-1/actions
+install -d -m 755 %{buildroot}%{_datadir}/metainfo
 
 # --- 2. Copy Files from Tarball ---
 install -m 644 ./freenet.jar %{buildroot}%{install_dir}/
@@ -82,6 +83,9 @@ install -m 644 ./hyphanet.png %{buildroot}%{_datadir}/pixmaps/hyphanet.png
 
 # Install PolicyKit policy
 install -m 644 ./org.hyphanet.service.policy %{buildroot}%{_datadir}/polkit-1/actions/org.hyphanet.service.policy
+
+# Install AppStream metadata
+install -m 644 ./org.hyphanet.hyphanet.metainfo.xml %{buildroot}%{_datadir}/metainfo/org.hyphanet.hyphanet.metainfo.xml
 
 # --- 3. Symlink (CLI) ---
 # Creates a symbolic link /usr/bin/hyphanet pointing to /opt/hyphanet/hyphanet-service
@@ -152,6 +156,7 @@ fi
 %{_datadir}/applications/hyphanet-stop.desktop
 %{_datadir}/pixmaps/hyphanet.png
 %{_datadir}/polkit-1/actions/org.hyphanet.service.policy
+%{_datadir}/metainfo/org.hyphanet.hyphanet.metainfo.xml
 
 # Data Dirs
 %dir %{data_dir}
