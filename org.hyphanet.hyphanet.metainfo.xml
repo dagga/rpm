@@ -22,8 +22,12 @@
   <launchable type="desktop-id">hyphanet.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://upload.wikimedia.org/wikipedia/commons/b/b8/Freenet_0.7.5_screenshot.png</image>
+      <image>https://en.wikipedia.org/wiki/Hyphanet#/media/File:The_welcome_page_of_Freenet_Hyphanet.png</image>
       <caption>The Hyphanet Web Interface (FProxy)</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://en.wikipedia.org/wiki/Hyphanet#/media/File:Freenet_darknet.png</image>
+      <caption>Darknet mode</caption>
     </screenshot>
   </screenshots>
   <url type="homepage">https://www.hyphanet.org</url>
