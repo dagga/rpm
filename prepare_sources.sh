@@ -5,16 +5,29 @@
 set -e
 
 # --- Configuration ---
-VERSION="0.7.5+1505"
-BUILD_ID="01505"
-BUILD_DIR="fred-build${BUILD_ID}"
-ARCHIVE_NAME="hyphanet-${VERSION}.tar.gz"
+# Use environment variables provided by Gradle, or default values for manual run
+VERSION="${APP_VERSION:-0.7.5}"
+BUILD_ID="${BUILD_ID:-1505}"
+
+# The directory name inside the archive MUST be name-version
+BUILD_DIR_NAME="hyphanet-${VERSION}"
+# Archive name keeps the build ID for clarity
+ARCHIVE_NAME="hyphanet-${VERSION}-${BUILD_ID}.tar.gz"
 
 # --- Paths ---
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-# RPM Build Root is now the project root itself
-RPM_BUILD_ROOT="${SCRIPT_DIR}"
+
+# Use RPM_BUILD_ROOT from environment if set, otherwise use script dir
+if [ -z "$RPM_BUILD_ROOT" ]; then
+    RPM_BUILD_ROOT="${SCRIPT_DIR}"
+fi
+
 RPM_SOURCES_DIR="${RPM_BUILD_ROOT}/SOURCES"
+
+# Temporary build location to avoid polluting project root
+# We use a temp dir inside the build root
+TEMP_BUILD_ROOT="${RPM_BUILD_ROOT}/temp_build"
+BUILD_DIR="${TEMP_BUILD_ROOT}/${BUILD_DIR_NAME}"
 
 # Check if DOWNLOADS_DIR is set
 if [ -z "$DOWNLOADS_DIR" ]; then
@@ -66,7 +79,9 @@ done
 # --- Preparation ---
 echo "[1/4] Cleaning up and creating build directory..."
 if [ ! -d "$RPM_SOURCES_DIR" ]; then mkdir -p "$RPM_SOURCES_DIR"; fi
-rm -rf "${BUILD_DIR}"
+
+# Clean up previous temp build
+rm -rf "${TEMP_BUILD_ROOT}"
 mkdir -p "${BUILD_DIR}/lib"
 
 # --- Asset Handling ---
@@ -101,5 +116,13 @@ chmod +x "${BUILD_DIR}/hyphanet-service"
 
 # --- Archiving ---
 echo "--- Creating archive in $RPM_SOURCES_DIR ---"
-tar -czf "${RPM_SOURCES_DIR}/${ARCHIVE_NAME}" "${BUILD_DIR}"
+# Archive from TEMP_BUILD_ROOT so that the archive contains the directory BUILD_DIR_NAME
+tar -czf "${RPM_SOURCES_DIR}/${ARCHIVE_NAME}" -C "${TEMP_BUILD_ROOT}" "${BUILD_DIR_NAME}"
 echo "SUCCESS: Archive created properly in $RPM_SOURCES_DIR"
+
+# Cleanup
+rm -rf "${TEMP_BUILD_ROOT}"
+
+# Debug: List archive content
+echo "DEBUG: Archive content preview:"
+tar -tf "${RPM_SOURCES_DIR}/${ARCHIVE_NAME}" | head -n 5

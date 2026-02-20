@@ -14,14 +14,19 @@
 %define log_dir     /var/log/hyphanet
 %define user_name   hyphanet
 
+# Default values if not provided by rpmbuild command line
+%{!?version: %define version 0.7.5}
+%{!?build_id: %define build_id 1505}
+
 Name:           hyphanet
-Version:        0.7.5+1505
-Release:        4
+Version:        %{version}
+Release:        %{build_id}.1
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
 URL:            https://www.hyphanet.org
-Source0:        hyphanet-%{version}.tar.gz
+# Source filename must match what prepare_sources.sh generates
+Source0:        hyphanet-%{version}-%{build_id}.tar.gz
 
 BuildArch:      x86_64
 
@@ -36,7 +41,7 @@ Hyphanet (formerly Freenet) is a peer-to-peer platform for censorship-resistant
 communication.
 
 %prep
-%setup -q -n fred-build01505
+%setup -q
 
 %build
 # Nothing to compile (Binaries provided in tarball)
@@ -69,7 +74,7 @@ install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 install -m 644 ./hyphanet.service %{buildroot}%{_unitdir}/hyphanet.service
 install -m 644 ./hyphanet.sysusers %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
 
-# Install desktop files and icon file
+# Install desktop file and icon file
 install -m 644 ./hyphanet.desktop %{buildroot}%{_datadir}/applications/hyphanet.desktop
 install -m 644 ./hyphanet-start.desktop %{buildroot}%{_datadir}/applications/hyphanet-start.desktop
 install -m 644 ./hyphanet-stop.desktop %{buildroot}%{_datadir}/applications/hyphanet-stop.desktop
@@ -158,5 +163,5 @@ fi
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
-* Wed Feb 11 2026 Ton Nom <hernic@gmail.com> - 0.1
+* Wed Feb 11 2026 Ton Nom <hernic@gmail.com> - 0.7.5-1505.1
 - Initial build of the package
