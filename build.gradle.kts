@@ -9,8 +9,8 @@ plugins {
 val appVersion = "0.7.5"
 val buildId = "1505"
 
-// Use a dedicated build directory inside 'build/' to avoid polluting the project root
-val rpmBuildRoot = layout.buildDirectory.dir("rpmbuild")
+// The project root IS the rpmbuild root
+val rpmBuildRoot = layout.projectDirectory
 val downloadsDir = layout.buildDirectory.dir("downloads")
 
 // Configuration des téléchargements
@@ -22,7 +22,7 @@ val artifacts = listOf(
     Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar.sig", "a611b164ac4ba0dd378be8de155e064653e370332f129050a5018db88d06dc62"),
     Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-ext.jar", "32f2b3d6beedf54137ea2f9a3ebef67666d769f0966b08cd17fd7db59ba4d79f"),
 
-    // Dependencies (Verified against verification-metadata.xml)
+    // Dependencies
     Downloadable("bcprov.jar", "https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar", "1c31e44e331d25e46d293b3e8ee2d07028a67db011e74cb2443285aed1d59c85"),
     Downloadable("jna.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar", "0c8eb7acf67261656d79005191debaba3b6bf5dd60a43735a245429381dbecff"),
     Downloadable("jna-platform.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna-platform/4.5.2/jna-platform-4.5.2.jar", "f1d00c167d8921c6e23c626ef9f1c3ae0be473c95c68ffa012bc7ae55a87e2d6"),
@@ -50,7 +50,6 @@ tasks.register("downloadAssets") {
         artifacts.forEach { artifact ->
             val file = File(outputDir, artifact.name)
             
-            // 1. Download if missing
             if (!file.exists()) {
                 println("Downloading ${artifact.name}...")
                 val url = URI(artifact.url).toURL()
@@ -61,7 +60,6 @@ tasks.register("downloadAssets") {
                 }
             }
 
-            // 2. Calculate Hash
             val digest = MessageDigest.getInstance("SHA-256")
             file.inputStream().use { input ->
                 val buffer = ByteArray(8192)
@@ -73,10 +71,9 @@ tasks.register("downloadAssets") {
             }
             val calculatedHash = digest.digest().joinToString("") { "%02x".format(it) }
 
-            // 3. Verify Hash
             if (artifact.sha256.isNotEmpty()) {
                 if (calculatedHash != artifact.sha256) {
-                    throw GradleException("Checksum mismatch for ${artifact.name}!\nExpected: ${artifact.sha256}\nActual:   $calculatedHash\nPlease delete the file or update the hash in build.gradle.kts")
+                    throw GradleException("Checksum mismatch for ${artifact.name}!\nExpected: ${artifact.sha256}\nActual:   $calculatedHash")
                 }
             } else {
                 println("WARNING: No hash provided for ${artifact.name}. Calculated hash: $calculatedHash")
@@ -93,11 +90,8 @@ tasks.register<Exec>("verifyJarSignature") {
     val jarFile = downloadsDir.map { it.file("freenet.jar") }
     val sigFile = downloadsDir.map { it.file("freenet.jar.sig") }
     
-    // This task requires GPG to be installed and the Hyphanet key to be imported
-    // We assume this is done in the CI environment or manually by the user
     commandLine("gpg", "--verify", sigFile.get().asFile.absolutePath, jarFile.get().asFile.absolutePath)
     
-    // Only run if both files exist
     onlyIf { jarFile.get().asFile.exists() && sigFile.get().asFile.exists() }
 }
 
@@ -105,15 +99,13 @@ tasks.register<Exec>("prepareSources") {
     group = "rpm"
     description = "Prepares the source tarball using prepare_sources.sh"
     dependsOn("downloadAssets")
-    // Uncomment the following line to enforce signature verification before build
+    // Uncomment to enforce signature verification
     // dependsOn("verifyJarSignature")
     
-    // Ensure the script is executable
     doFirst {
         file("prepare_sources.sh").setExecutable(true)
         
-        // Ensure rpmbuild directories exist
-        val root = rpmBuildRoot.get().asFile
+        val root = rpmBuildRoot.asFile
         File(root, "SOURCES").mkdirs()
         File(root, "SPECS").mkdirs()
         File(root, "BUILD").mkdirs()
@@ -123,12 +115,10 @@ tasks.register<Exec>("prepareSources") {
 
     commandLine("./prepare_sources.sh")
     
-    // Pass configuration via Environment Variables
     environment("DOWNLOADS_DIR", downloadsDir.get().asFile.absolutePath)
     environment("APP_VERSION", appVersion)
     environment("BUILD_ID", buildId)
-    // Pass the build root to the script
-    environment("RPM_BUILD_ROOT", rpmBuildRoot.get().asFile.absolutePath)
+    environment("RPM_BUILD_ROOT", rpmBuildRoot.asFile.absolutePath)
     
     inputs.files(
         "prepare_sources.sh",
@@ -143,10 +133,9 @@ tasks.register<Exec>("prepareSources") {
         "hyphanet.png",
         "org.hyphanet.service.policy"
     )
-    // Add downloaded files as inputs
     inputs.dir(downloadsDir)
     
-    outputs.dir(rpmBuildRoot.map { it.dir("SOURCES") })
+    outputs.dir(rpmBuildRoot.dir("SOURCES"))
 }
 
 tasks.register<Exec>("buildRpm") {
@@ -155,18 +144,7 @@ tasks.register<Exec>("buildRpm") {
     dependsOn("prepareSources")
 
     val specFile = file("SPECS/hyphanet.spec")
-    val topDir = rpmBuildRoot.get().asFile.absolutePath
-    
-    doFirst {
-        // Copy spec file to the build directory
-        copy {
-            from(specFile)
-            into(rpmBuildRoot.map { it.dir("SPECS") })
-        }
-    }
-    
-    // Use the spec file inside the build directory
-    val buildSpecFile = rpmBuildRoot.map { it.file("SPECS/hyphanet.spec") }.get().asFile
+    val topDir = rpmBuildRoot.asFile.absolutePath
     
     commandLine(
         "/usr/bin/rpmbuild",
@@ -174,34 +152,21 @@ tasks.register<Exec>("buildRpm") {
         "--define", "_topdir ${topDir}",
         "--define", "version ${appVersion}",
         "--define", "build_id ${buildId}",
-        buildSpecFile.absolutePath
+        specFile.absolutePath
     )
     
-    doLast { // Because a possible bug with rpmbuild
-        val standardDir = rpmBuildRoot.get().dir("RPMS/x86_64").asFile
-        val weirdDir = rpmBuildRoot.get().dir("RPMS.x86_64").asFile
+    doLast {
+        // Cleanup potential non-standard output directories from rpmbuild
         val targetDir = layout.projectDirectory.dir("RPMS/x86_64").asFile
-        
-        if (!targetDir.exists()) {
-            targetDir.mkdirs()
-        }
+        if (!targetDir.exists()) targetDir.mkdirs()
 
-        if (standardDir.exists()) {
-            standardDir.listFiles()?.forEach { file ->
-                file.copyTo(File(targetDir, file.name), overwrite = true)
-                println("Copied ${file.name} to ${targetDir.path}")
-            }
-        }
-        
-        if (weirdDir.exists()) {
-            println("Detected non-standard output directory: ${weirdDir.name}. Moving content to RPMS/x86_64...")
-            weirdDir.listFiles()?.forEach { file ->
+        val weirdRootDir = layout.projectDirectory.dir("RPMS.x86_64").asFile
+        if (weirdRootDir.exists()) {
+            weirdRootDir.listFiles()?.forEach { file ->
                 val dest = File(targetDir, file.name)
                 file.renameTo(dest)
-                println("Moved ${file.name} to ${dest.path}")
             }
-            weirdDir.deleteRecursively()
-            println("Deleted ${weirdDir.name}")
+            weirdRootDir.deleteRecursively()
         }
     }
 }
@@ -213,7 +178,11 @@ tasks.named("build") {
 tasks.named("clean") {
     doLast {
         delete(layout.buildDirectory)
-        // Also clean the output directory at root
         delete(layout.projectDirectory.dir("RPMS"))
+        delete(layout.projectDirectory.dir("RPMS.x86_64"))
+        delete(layout.projectDirectory.dir("SOURCES"))
+        delete(layout.projectDirectory.dir("BUILD"))
+        delete(layout.projectDirectory.dir("BUILDROOT"))
+        delete(layout.projectDirectory.dir("SRPMS"))
     }
 }

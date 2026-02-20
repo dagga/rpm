@@ -20,7 +20,7 @@
 
 Name:           hyphanet
 Version:        %{version}
-Release:        %{build_id}.1
+Release:        %{build_id}.5
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
