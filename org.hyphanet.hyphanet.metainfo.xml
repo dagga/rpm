@@ -22,17 +22,13 @@
   <launchable type="desktop-id">hyphanet.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/hyphanet/wiki/master/images/screenshots/fproxy_welcome.png</image>
+      <image>https://upload.wikimedia.org/wikipedia/commons/b/b8/Freenet_0.7.5_screenshot.png</image>
       <caption>The Hyphanet Web Interface (FProxy)</caption>
-    </screenshot>
-    <screenshot>
-      <image>https://raw.githubusercontent.com/hyphanet/wiki/master/images/screenshots/fproxy_browse.png</image>
-      <caption>Browsing a Freesite</caption>
     </screenshot>
   </screenshots>
   <url type="homepage">https://www.hyphanet.org</url>
-  <url type="bugtracker">https://github.com/hyphanet/fred/issues</url>
-  <url type="help">https://wiki.hyphanet.org/</url>
+  <url type="bugtracker">https://freenet.mantishub.io/my_view_page.php</url>
+  <url type="help">https://github.com/hyphanet/wiki/wiki</url>
   <provides>
     <binary>hyphanet</binary>
   </provides>
