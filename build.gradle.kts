@@ -53,7 +53,6 @@ tasks.register("downloadAssets") {
         artifacts.forEach { artifact ->
             val file = File(outputDir, artifact.name)
             
-            // 1. Download if missing
             if (!file.exists()) {
                 println("Downloading ${artifact.name}...")
                 val url = URI(artifact.url).toURL()
@@ -64,7 +63,6 @@ tasks.register("downloadAssets") {
                 }
             }
 
-            // 2. Calculate Hash
             val digest = MessageDigest.getInstance("SHA-256")
             file.inputStream().use { input ->
                 val buffer = ByteArray(8192)
@@ -76,7 +74,6 @@ tasks.register("downloadAssets") {
             }
             val calculatedHash = digest.digest().joinToString("") { "%02x".format(it) }
 
-            // 3. Verify Hash
             if (artifact.sha256.isNotEmpty()) {
                 if (calculatedHash != artifact.sha256) {
                     throw GradleException("Checksum mismatch for ${artifact.name}!\nExpected: ${artifact.sha256}\nActual:   $calculatedHash\nPlease delete the file or update the hash in build.gradle.kts")
@@ -97,8 +94,6 @@ tasks.register<Exec>("verifyJarSignature") {
     val sigFile = downloadsDir.map { it.file("freenet.jar.sig") }
     val keyringFile = downloadsDir.map { it.file("keyring.gpg") }
     
-    // This task requires GPG to be installed and the Hyphanet key to be imported
-    // We assume this is done in the CI environment or manually by the user
     commandLine(
         "gpg", 
         "--no-default-keyring", 
@@ -107,7 +102,6 @@ tasks.register<Exec>("verifyJarSignature") {
         jarFile.get().asFile.absolutePath
     )
     
-    // Only run if both files exist
     onlyIf { jarFile.get().asFile.exists() && sigFile.get().asFile.exists() && keyringFile.get().asFile.exists() }
 }
 
@@ -115,14 +109,12 @@ tasks.register<Exec>("prepareSources") {
     group = "rpm"
     description = "Prepares the source tarball using prepare_sources.sh"
     dependsOn("downloadAssets")
-    // Uncomment the following line to enforce signature verification before build
+    // Uncomment to enforce signature verification
     // dependsOn("verifyJarSignature")
     
-    // Ensure the script is executable
     doFirst {
         file("prepare_sources.sh").setExecutable(true)
         
-        // Ensure rpmbuild directories exist at project root
         val root = rpmBuildRoot.asFile
         File(root, "SOURCES").mkdirs()
         File(root, "SPECS").mkdirs()
@@ -133,11 +125,9 @@ tasks.register<Exec>("prepareSources") {
 
     commandLine("./prepare_sources.sh")
     
-    // Pass configuration via Environment Variables
     environment("DOWNLOADS_DIR", downloadsDir.get().asFile.absolutePath)
     environment("APP_VERSION", appVersion)
     environment("BUILD_ID", buildId)
-    // Pass the build root to the script (Project Root)
     environment("RPM_BUILD_ROOT", rpmBuildRoot.asFile.absolutePath)
     
     inputs.files(
@@ -151,9 +141,9 @@ tasks.register<Exec>("prepareSources") {
         "hyphanet-start.desktop",
         "hyphanet-stop.desktop",
         "hyphanet.png",
-        "org.hyphanet.service.policy"
+        "org.hyphanet.service.policy",
+        "org.hyphanet.hyphanet.metainfo.xml"
     )
-    // Add downloaded files as inputs
     inputs.dir(downloadsDir)
     
     outputs.dir(rpmBuildRoot.dir("SOURCES"))
@@ -185,33 +175,12 @@ tasks.register<Exec>("buildRpm") {
             targetDir.mkdirs()
         }
 
-        // 1. Check for the standard output (build/rpmbuild/RPMS/x86_64)
-        // rpmBuildRoot is a Directory, not a Provider, so no .get()
-        val standardDir = rpmBuildRoot.dir("RPMS/x86_64").asFile
-        if (standardDir.exists()) {
-            println("Found RPMs in standard dir: ${standardDir.path}")
-            standardDir.listFiles()?.forEach { file ->
-                val dest = File(targetDir, file.name)
-                file.copyTo(dest, overwrite = true)
-                println("Copied ${file.name} to ${dest.path}")
-            }
-        }
-        
-        // 2. Check for the weird output in build dir (build/rpmbuild/RPMS.x86_64)
-        val weirdBuildDir = rpmBuildRoot.dir("RPMS.x86_64").asFile
-        if (weirdBuildDir.exists()) {
-            println("Found RPMs in weird build dir: ${weirdBuildDir.path}")
-            weirdBuildDir.listFiles()?.forEach { file ->
-                val dest = File(targetDir, file.name)
-                file.copyTo(dest, overwrite = true)
-                println("Copied ${file.name} to ${dest.path}")
-            }
-        }
-
-        // 3. Check for the weird output at PROJECT ROOT (RPMS.x86_64)
+        // Only check for the weird output at PROJECT ROOT (RPMS.x86_64)
+        // We don't copy from standard dir because if rpmBuildRoot IS project root,
+        // then standard dir IS target dir, and copying causes errors.
         val weirdRootDir = layout.projectDirectory.dir("RPMS.x86_64").asFile
         if (weirdRootDir.exists()) {
-            println("Found RPMs in weird root dir: ${weirdRootDir.path}")
+            println("Found RPMs in non-standard dir: ${weirdRootDir.path}")
             weirdRootDir.listFiles()?.forEach { file ->
                 val dest = File(targetDir, file.name)
                 // Move instead of copy to clean up
@@ -225,7 +194,7 @@ tasks.register<Exec>("buildRpm") {
             println("No weird RPMS.x86_64 directory found.")
         }
         
-        // 4. Check if RPMs are already in the right place (standard behavior)
+        // Check if RPMs are present in the target directory
         if (targetDir.listFiles()?.isNotEmpty() == true) {
              println("RPMs are present in ${targetDir.path}:")
              targetDir.listFiles()?.forEach { println(" - ${it.name}") }
