@@ -1,0 +1,71 @@
+name: Build and Sign RPM
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y rpm gnupg2
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Download Assets
+        run: ./gradlew downloadAssets
+
+      - name: Verify freenet.jar Signature
+        run: ./gradlew verifyJarSignature
+
+      - name: Build RPM with Gradle
+        run: ./gradlew buildRpm
+        
+      - name: Import Signing GPG Key
+        # This step only runs on pushes to the main branch.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Importing GPG key..."
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+      - name: Configure RPM GPG Key
+        # This step only runs on pushes to the main branch.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Configuring .rpmmacros for GPG signing..."
+          # IMPORTANT: Replace with your actual GPG key name/email
+          GPG_KEY_NAME="Your name (comment) <your.email@example.com>"
+          echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
+
+      - name: Sign the RPM package
+        # This step only runs on pushes to the main branch.
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "Signing RPM package..."
+          RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
+          echo "RPM found at: ${RPM_PATH}"
+          echo "${{ secrets.GPG_PASSPHRASE }}" | rpmsign --addsign "${RPM_PATH}"
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Upload RPM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hyphanet-rpm
+          path: ./RPMS/x86_64/*.rpm
