@@ -18,6 +18,9 @@
 %{!?version: %define version 0.7.5}
 %{!?build_id: %define build_id 1505}
 
+# Define _unitdir if not defined (for compatibility with non-RH build environments)
+%{!?_unitdir: %define _unitdir /usr/lib/systemd/system}
+
 Name:           hyphanet
 Version:        %{version}
 Release:        %{build_id}.1
