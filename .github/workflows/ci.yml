@@ -29,10 +29,15 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.14.3'
+          # Force cache cleanup if needed by changing cache-read-only
+          cache-read-only: false
+
+      - name: Debug - Check build.gradle.kts content
+        run: grep "val buildId" build.gradle.kts
 
       # Use 'gradle' command instead of './gradlew' to avoid needing the wrapper JAR in repo
       - name: Download Assets
-        run: gradle downloadAssets
+        run: gradle downloadAssets --no-daemon --refresh-dependencies
 
       - name: Build RPM with Gradle
         run: gradle buildRpm
