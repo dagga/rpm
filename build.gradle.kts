@@ -36,9 +36,8 @@ val artifacts = listOf(
     Downloadable("unbescape.jar", "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar", "597cf87d5b1a4f385b9d1cec974b7b483abb3ee85fc5b3f8b62af8e4bec95c2c"),
     Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79"),
 
-    // Wrapper (Using Hyphanet mirror to avoid 403 Forbidden from Tanuki)
-    // Note: Hash removed temporarily to allow download and recalculation
-    Downloadable("wrapper.tar.gz", "https://github.com/hyphanet/java_installer/raw/next/offline/wrapper_Linux_x86-64.tar.gz", ""),
+    // Wrapper
+    Downloadable("wrapper.tar.gz", "https://download.tanukisoftware.com/wrapper/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
 
     // Seednodes
     Downloadable("seednodes.fref", "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref", "1dc8da78a0062ae1796465c65f3b44e4277a06469c16921689fb2b7923281fff")
@@ -142,7 +141,7 @@ tasks.register<Exec>("prepareSources") {
     dependsOn("downloadAssets")
     // Enforce signature verification
     dependsOn("verifyJarSignature")
-
+    
     doFirst {
         file("prepare_sources.sh").setExecutable(true)
         
@@ -187,6 +186,11 @@ tasks.register<Exec>("buildRpm") {
 
     val specFile = file("SPECS/hyphanet.spec")
     val topDir = rpmBuildRoot.asFile.absolutePath
+    
+    doFirst {
+        println("DEBUG: Content of spec file used for build:")
+        println(specFile.readText())
+    }
     
     commandLine(
         "/usr/bin/rpmbuild",
