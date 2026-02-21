@@ -17,14 +17,10 @@ val downloadsDir = layout.buildDirectory.dir("downloads")
 data class Downloadable(val name: String, val url: String, val sha256: String)
 
 val artifacts = listOf(
-    // Hyphanet JARs and Signature
+    // Hyphanet JARs
     Downloadable("freenet.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet.jar", "e8f49d90e49886aa7d4b56d3aaf21cf41e2b862120782d3992c29679160b5c7a"),
-    Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar.sig", "a611b164ac4ba0dd378be8de155e064653e370332f129050a5018db88d06dc62"),
     Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-ext.jar", "32f2b3d6beedf54137ea2f9a3ebef67666d769f0966b08cd17fd7db59ba4d79f"),
     
-    // Official Hyphanet Keyring for verification
-    Downloadable("keyring.gpg", "https://www.hyphanet.org/assets/keyring.gpg", "e8a4afdc5eaf0f3b36955cf8df22368a8bd1eda3eb1d286735e777e721025998"),
-
     // Dependencies (Verified against verification-metadata.xml)
     Downloadable("bcprov.jar", "https://repo1.maven.org/maven2/org/bouncycastle/bcprov-jdk15on/1.59/bcprov-jdk15on-1.59.jar", "1c31e44e331d25e46d293b3e8ee2d07028a67db011e74cb2443285aed1d59c85"),
     Downloadable("jna.jar", "https://repo1.maven.org/maven2/net/java/dev/jna/jna/4.5.2/jna-4.5.2.jar", "0c8eb7acf67261656d79005191debaba3b6bf5dd60a43735a245429381dbecff"),
@@ -85,33 +81,11 @@ tasks.register("downloadAssets") {
     }
 }
 
-tasks.register<Exec>("verifyJarSignature") {
-    group = "rpm"
-    description = "Verifies the GPG signature of freenet.jar"
-    dependsOn("downloadAssets")
-    
-    val jarFile = downloadsDir.map { it.file("freenet.jar") }
-    val sigFile = downloadsDir.map { it.file("freenet.jar.sig") }
-    val keyringFile = downloadsDir.map { it.file("keyring.gpg") }
-    
-    commandLine(
-        "gpg", 
-        "--no-default-keyring", 
-        "--keyring", keyringFile.get().asFile.absolutePath, 
-        "--verify", sigFile.get().asFile.absolutePath, 
-        jarFile.get().asFile.absolutePath
-    )
-    
-    onlyIf { jarFile.get().asFile.exists() && sigFile.get().asFile.exists() && keyringFile.get().asFile.exists() }
-}
-
 tasks.register<Exec>("prepareSources") {
     group = "rpm"
     description = "Prepares the source tarball using prepare_sources.sh"
     dependsOn("downloadAssets")
-    // Uncomment to enforce signature verification
-    // dependsOn("verifyJarSignature")
-    
+
     doFirst {
         file("prepare_sources.sh").setExecutable(true)
         
@@ -167,39 +141,16 @@ tasks.register<Exec>("buildRpm") {
     )
     
     doLast {
-        println("=== Post-build cleanup and organization ===")
-        
         val targetDir = layout.projectDirectory.dir("RPMS/x86_64").asFile
-        if (!targetDir.exists()) {
-            println("Creating target directory: ${targetDir.path}")
-            targetDir.mkdirs()
-        }
+        if (!targetDir.exists()) targetDir.mkdirs()
 
-        // Only check for the weird output at PROJECT ROOT (RPMS.x86_64)
-        // We don't copy from standard dir because if rpmBuildRoot IS project root,
-        // then standard dir IS target dir, and copying causes errors.
         val weirdRootDir = layout.projectDirectory.dir("RPMS.x86_64").asFile
         if (weirdRootDir.exists()) {
-            println("Found RPMs in non-standard dir: ${weirdRootDir.path}")
             weirdRootDir.listFiles()?.forEach { file ->
                 val dest = File(targetDir, file.name)
-                // Move instead of copy to clean up
                 file.renameTo(dest)
-                println("SUCCESS: Moved ${file.name} to ${dest.path}")
             }
-            // Force delete the weird directory
             weirdRootDir.deleteRecursively()
-            println("Deleted weird root dir: ${weirdRootDir.path}")
-        } else {
-            println("No weird RPMS.x86_64 directory found.")
-        }
-        
-        // Check if RPMs are present in the target directory
-        if (targetDir.listFiles()?.isNotEmpty() == true) {
-             println("RPMs are present in ${targetDir.path}:")
-             targetDir.listFiles()?.forEach { println(" - ${it.name}") }
-        } else {
-             println("WARNING: No RPMs found in ${targetDir.path}!")
         }
     }
 }
@@ -211,12 +162,8 @@ tasks.named("build") {
 tasks.named("clean") {
     doLast {
         delete(layout.buildDirectory)
-        // Also clean the output directory at root
         delete(layout.projectDirectory.dir("RPMS"))
-        // And the weird one if it persists
         delete(layout.projectDirectory.dir("RPMS.x86_64"))
-        
-        // Clean other rpmbuild dirs at root
         delete(layout.projectDirectory.dir("SOURCES"))
         delete(layout.projectDirectory.dir("BUILD"))
         delete(layout.projectDirectory.dir("BUILDROOT"))
