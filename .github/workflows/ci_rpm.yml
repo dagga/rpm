@@ -2,9 +2,10 @@ name: Build and Sign RPM
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,21 +24,24 @@ jobs:
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y rpm gnupg2
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
+      # Setup Gradle environment and add 'gradle' to PATH
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.14.3'
 
+      # Use 'gradle' command instead of './gradlew' to avoid needing the wrapper JAR in repo
       - name: Download Assets
-        run: ./gradlew downloadAssets
+        run: gradle downloadAssets
 
       - name: Verify freenet.jar Signature
-        run: ./gradlew verifyJarSignature
+        run: gradle verifyJarSignature
 
       - name: Build RPM with Gradle
-        run: ./gradlew buildRpm
+        run: gradle buildRpm
         
       - name: Import Signing GPG Key
-        # This step only runs on pushes to the main branch.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         run: |
           echo "Importing GPG key..."
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
@@ -45,8 +49,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Configure RPM GPG Key
-        # This step only runs on pushes to the main branch.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
           # IMPORTANT: Replace with your actual GPG key name/email
@@ -54,8 +57,7 @@ jobs:
           echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
 
       - name: Sign the RPM package
-        # This step only runs on pushes to the main branch.
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         run: |
           echo "Signing RPM package..."
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
