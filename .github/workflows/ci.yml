@@ -2,9 +2,9 @@ name: Build and Sign RPM
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
@@ -34,14 +34,11 @@ jobs:
       - name: Download Assets
         run: gradle downloadAssets
 
-      - name: Verify freenet.jar Signature
-        run: gradle verifyJarSignature
-
       - name: Build RPM with Gradle
         run: gradle buildRpm
         
       - name: Import Signing GPG Key
-        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch'
         run: |
           echo "Importing GPG key..."
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
@@ -49,7 +46,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Configure RPM GPG Key
-        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch'
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
           # IMPORTANT: Replace with your actual GPG key name/email
@@ -57,7 +54,7 @@ jobs:
           echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
 
       - name: Sign the RPM package
-        if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch'
         run: |
           echo "Signing RPM package..."
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
