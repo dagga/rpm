@@ -29,11 +29,13 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: '8.14.3'
-          # Force cache cleanup if needed by changing cache-read-only
           cache-read-only: false
 
       - name: Debug - Check build.gradle.kts content
         run: grep "val buildId" build.gradle.kts
+
+      - name: Debug - Check hyphanet.spec content
+        run: cat SPECS/hyphanet.spec
 
       # Use 'gradle' command instead of './gradlew' to avoid needing the wrapper JAR in repo
       - name: Download Assets
