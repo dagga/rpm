@@ -141,7 +141,7 @@ tasks.register<Exec>("prepareSources") {
     dependsOn("downloadAssets")
     // Enforce signature verification
     dependsOn("verifyJarSignature")
-
+    
     doFirst {
         file("prepare_sources.sh").setExecutable(true)
         
@@ -193,6 +193,8 @@ tasks.register<Exec>("buildRpm") {
         "--define", "_topdir ${topDir}",
         "--define", "version ${appVersion}",
         "--define", "build_id ${buildId}",
+        // Force definition of _unitdir to ensure compatibility on all systems (including Ubuntu/GitHub Actions)
+        "--define", "_unitdir /usr/lib/systemd/system",
         specFile.absolutePath
     )
     
