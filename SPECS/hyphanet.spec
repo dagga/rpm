@@ -1,8 +1,5 @@
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
-# Define _unitdir explicitly if not defined (fix for Ubuntu/Debian builds)
-%{!?_unitdir: %define _unitdir /usr/lib/systemd/system}
-
 # Disable debug info generation (Fix for Fedora/RHEL)
 %global debug_package %{nil}
 %global _debugsource_template %{nil}
@@ -20,6 +17,13 @@
 # Default values if not provided by rpmbuild command line
 %{!?version: %define version 0.7.5}
 %{!?build_id: %define build_id 1505}
+
+# Robust definition of unitdir
+# If _unitdir is defined (e.g. on Fedora), use it.
+# If not (e.g. on Ubuntu), use /usr/lib/systemd/system.
+%if %{undefined _unitdir}
+%define _unitdir /usr/lib/systemd/system
+%endif
 
 Name:           hyphanet
 Version:        %{version}
@@ -53,7 +57,7 @@ communication.
 # --- 1. Directory Structure ---
 install -d -m 755 %{buildroot}%{install_dir}
 install -d -m 755 %{buildroot}%{install_dir}/lib
-# Ensure _unitdir is used correctly
+# Use the macro which is now guaranteed to be defined
 install -d -m 755 %{buildroot}%{_unitdir}
 install -d -m 750 %{buildroot}%{data_dir}
 install -d -m 750 %{buildroot}%{log_dir}
