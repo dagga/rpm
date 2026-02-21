@@ -1,5 +1,8 @@
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
+# Force definition of unitdir to avoid issues on non-RH systems (Ubuntu/Debian)
+%define my_unitdir /usr/lib/systemd/system
+
 # Disable debug info generation (Fix for Fedora/RHEL)
 %global debug_package %{nil}
 %global _debugsource_template %{nil}
@@ -17,13 +20,6 @@
 # Default values if not provided by rpmbuild command line
 %{!?version: %define version 0.7.5}
 %{!?build_id: %define build_id 1505}
-
-# Robust definition of unitdir
-# If _unitdir is defined (e.g. on Fedora), use it.
-# If not (e.g. on Ubuntu), use /usr/lib/systemd/system.
-%if %{undefined _unitdir}
-%define _unitdir /usr/lib/systemd/system
-%endif
 
 Name:           hyphanet
 Version:        %{version}
@@ -57,8 +53,8 @@ communication.
 # --- 1. Directory Structure ---
 install -d -m 755 %{buildroot}%{install_dir}
 install -d -m 755 %{buildroot}%{install_dir}/lib
-# Use the macro which is now guaranteed to be defined
-install -d -m 755 %{buildroot}%{_unitdir}
+# Use our custom macro which is guaranteed to be defined
+install -d -m 755 %{buildroot}%{my_unitdir}
 install -d -m 750 %{buildroot}%{data_dir}
 install -d -m 750 %{buildroot}%{log_dir}
 install -d -m 755 %{buildroot}%{_prefix}/lib/sysusers.d
@@ -80,7 +76,7 @@ install -m 755 ./hyphanet-wrapper %{buildroot}%{install_dir}/
 install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 
 # Install systemd unit and sysusers file
-install -m 644 ./hyphanet.service %{buildroot}%{_unitdir}/hyphanet.service
+install -m 644 ./hyphanet.service %{buildroot}%{my_unitdir}/hyphanet.service
 install -m 644 ./hyphanet.sysusers %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
 
 # Install desktop file and icon file
@@ -156,7 +152,7 @@ fi
 %{install_dir}
 
 # System Files
-%{_unitdir}/hyphanet.service
+%{my_unitdir}/hyphanet.service
 %{_prefix}/lib/sysusers.d/hyphanet.conf
 %{_bindir}/hyphanet
 %{_datadir}/applications/hyphanet.desktop
