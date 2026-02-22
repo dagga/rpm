@@ -50,7 +50,7 @@ communication.
 # --- 1. Directory Structure ---
 install -d -m 755 %{buildroot}%{install_dir}
 install -d -m 755 %{buildroot}%{install_dir}/lib
-# Hardcode the path to avoid macro issues
+# Hardcode the path to avoid macro issues on Ubuntu CI
 install -d -m 755 %{buildroot}/usr/lib/systemd/system
 install -d -m 750 %{buildroot}%{data_dir}
 install -d -m 750 %{buildroot}%{log_dir}
@@ -73,7 +73,7 @@ install -m 755 ./hyphanet-wrapper %{buildroot}%{install_dir}/
 install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 
 # Install systemd unit and sysusers file
-# Hardcode the path to avoid macro issues
+# Hardcode the path to avoid macro issues on Ubuntu CI
 install -m 644 ./hyphanet.service %{buildroot}/usr/lib/systemd/system/hyphanet.service
 install -m 644 ./hyphanet.sysusers %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
 
@@ -150,7 +150,7 @@ fi
 %{install_dir}
 
 # System Files
-# Hardcode the path to avoid macro issues
+# Hardcode the path to avoid macro issues on Ubuntu CI
 /usr/lib/systemd/system/hyphanet.service
 %{_prefix}/lib/sysusers.d/hyphanet.conf
 %{_bindir}/hyphanet
