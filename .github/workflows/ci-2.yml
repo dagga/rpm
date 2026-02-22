@@ -60,6 +60,9 @@ jobs:
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
           echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
           gpg-connect-agent reloadagent /bye
+          
+          # List keys to debug
+          gpg --list-secret-keys
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
@@ -68,6 +71,7 @@ jobs:
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
           # Auto-detect the key name to avoid mismatch
+          # We use the first UID found
           GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^uid:' | head -n 1 | cut -d: -f10)
           
           if [ -z "$GPG_KEY_NAME" ]; then
@@ -75,12 +79,17 @@ jobs:
              GPG_KEY_NAME="None"
           fi
           
-          echo "Using GPG Key: $GPG_KEY_NAME"
-          echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
+          echo "Detected GPG Key Name: '$GPG_KEY_NAME'"
+          
+          echo "%_gpg_name $GPG_KEY_NAME" > ~/.rpmmacros
           echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
           echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros
           # Force GPG to use loopback mode for passphrase
           echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --passphrase-fd 0 --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
+          
+          echo "=== Content of ~/.rpmmacros ==="
+          cat ~/.rpmmacros
+          echo "==============================="
 
       - name: Sign the RPM package
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
