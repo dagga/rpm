@@ -9,7 +9,7 @@ plugins {
 // --- Project Configuration ---
 val appVersion = "0.7.5"
 // Build ID must match the GitHub release tag (e.g. 01505)
-val buildId = "01505"
+val buildId = "01506"
 
 // The project root IS the rpmbuild root
 val rpmBuildRoot = layout.projectDirectory
