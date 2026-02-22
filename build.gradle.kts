@@ -37,7 +37,7 @@ val artifacts = listOf(
     Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79"),
 
     // Wrapper (Back to official Tanuki URL, simple download)
-    Downloadable("wrapper.tar.gz", "https://download.tanukisoftware.com/wrapper/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
+    Downloadable("wrapper.tar.gz", "https://wrapper.tanukisoftware.com/download/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
 
     // Seednodes
     Downloadable("seednodes.fref", "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref", "1dc8da78a0062ae1796465c65f3b44e4277a06469c16921689fb2b7923281fff")
