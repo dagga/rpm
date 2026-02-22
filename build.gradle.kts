@@ -21,7 +21,7 @@ data class Downloadable(val name: String, val url: String, val sha256: String)
 val artifacts = listOf(
     // Hyphanet JARs and Signature
     Downloadable("freenet.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar", "81339fbc0273eb5d6614e152e6447eb37f83316e3fa3265172c01b01291772f2"),
-    Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar.sig", "a611b164ac4ba0dd378be8de155e064653e370332f129050a5018db88d06dc62"),
+    Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar.sig", "71e3f54e9fa3dbe843f63b81dfdb4925681620ba3b41b04cf0a946675aba2d16"),
     Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-ext.jar", "32f2b3d6beedf54137ea2f9a3ebef67666d769f0966b08cd17fd7db59ba4d79f"),
     
     // Official Hyphanet Keyring for verification
