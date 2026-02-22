@@ -63,7 +63,7 @@ jobs:
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
           # IMPORTANT: Replace with your actual GPG key name/email
-          GPG_KEY_NAME="Your name (comment) <your.email@example.com>"
+          GPG_KEY_NAME="None"
           echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
 
       - name: Sign the RPM package
