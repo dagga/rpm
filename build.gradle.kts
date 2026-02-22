@@ -36,8 +36,8 @@ val artifacts = listOf(
     Downloadable("unbescape.jar", "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar", "597cf87d5b1a4f385b9d1cec974b7b483abb3ee85fc5b3f8b62af8e4bec95c2c"),
     Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79"),
 
-    // Wrapper (Using SourceForge as a reliable mirror)
-    Downloadable("wrapper.tar.gz", "https://sourceforge.net/projects/wrapper/files/wrapper_Wrapper_Source_Linux_x86-64_64/3.5.51/wrapper_linux_x86-64_3.5.51.tar.gz/download", ""),
+    // Wrapper (Back to official Tanuki URL with proper headers)
+    Downloadable("wrapper.tar.gz", "https://download.tanukisoftware.com/wrapper/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
 
     // Seednodes
     Downloadable("seednodes.fref", "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref", "1dc8da78a0062ae1796465c65f3b44e4277a06469c16921689fb2b7923281fff")
@@ -60,11 +60,15 @@ tasks.register("downloadAssets") {
                 println("Downloading ${artifact.name}...")
                 val url = URI(artifact.url).toURL()
                 val connection = url.openConnection() as HttpURLConnection
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
+                
+                // Mimic a real browser to avoid 403 Forbidden from Tanuki Software
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                connection.setRequestProperty("Referer", "https://wrapper.tanukisoftware.com/")
+                connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
                 connection.setInstanceFollowRedirects(true)
                 connection.connect()
                 
-                // Handle redirects manually if needed (SourceForge often redirects)
+                // Handle redirects manually if needed
                 var responseCode = connection.responseCode
                 var finalConnection = connection
                 
@@ -72,7 +76,8 @@ tasks.register("downloadAssets") {
                     val newUrl = connection.getHeaderField("Location")
                     println("Redirecting to $newUrl")
                     finalConnection = URI(newUrl).toURL().openConnection() as HttpURLConnection
-                    finalConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
+                    finalConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                    finalConnection.setRequestProperty("Referer", "https://wrapper.tanukisoftware.com/")
                     finalConnection.connect()
                     responseCode = finalConnection.responseCode
                 }
