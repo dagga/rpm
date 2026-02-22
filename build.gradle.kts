@@ -11,16 +11,15 @@ val appVersion = "0.7.5"
 // Build ID must match the GitHub release tag (e.g. 01505)
 val buildId = "01505"
 
-// The project root IS the rpmbuild root (User requirement)
+// The project root IS the rpmbuild root
 val rpmBuildRoot = layout.projectDirectory
 val downloadsDir = layout.buildDirectory.dir("downloads")
 
-// Configuration des téléchargements
+// Download configuration
 data class Downloadable(val name: String, val url: String, val sha256: String)
 
 val artifacts = listOf(
     // Hyphanet JARs and Signature
-    // Corrected URL format: freenet-buildXXXXX.jar
     Downloadable("freenet.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar", "e8f49d90e49886aa7d4b56d3aaf21cf41e2b862120782d3992c29679160b5c7a"),
     Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar.sig", "a611b164ac4ba0dd378be8de155e064653e370332f129050a5018db88d06dc62"),
     Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-ext.jar", "32f2b3d6beedf54137ea2f9a3ebef67666d769f0966b08cd17fd7db59ba4d79f"),
@@ -36,8 +35,8 @@ val artifacts = listOf(
     Downloadable("unbescape.jar", "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar", "597cf87d5b1a4f385b9d1cec974b7b483abb3ee85fc5b3f8b62af8e4bec95c2c"),
     Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79"),
 
-    // Wrapper (Back to official Tanuki URL, simple download)
-    Downloadable("wrapper.tar.gz", "https://wrapper.tanukisoftware.com/download/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
+    // Wrapper (Using SourceForge mirror for reliability)
+    Downloadable("wrapper.tar.gz", "https://sourceforge.net/projects/wrapper/files/wrapper_Wrapper_Source_Linux_x86-64_64/3.5.51/wrapper_linux_x86-64_3.5.51.tar.gz/download", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
 
     // Seednodes
     Downloadable("seednodes.fref", "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref", "1dc8da78a0062ae1796465c65f3b44e4277a06469c16921689fb2b7923281fff")
@@ -59,8 +58,28 @@ tasks.register("downloadAssets") {
             if (!file.exists()) {
                 println("Downloading ${artifact.name}...")
                 val url = URI(artifact.url).toURL()
-                // Simple download without complex headers
-                url.openStream().use { input ->
+                val connection = url.openConnection() as HttpURLConnection
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
+                connection.setInstanceFollowRedirects(true)
+                connection.connect()
+                
+                // Handle redirects manually if needed
+                var responseCode = connection.responseCode
+                var finalConnection = connection
+                
+                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                    val newUrl = connection.getHeaderField("Location")
+                    finalConnection = URI(newUrl).toURL().openConnection() as HttpURLConnection
+                    finalConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
+                    finalConnection.connect()
+                    responseCode = finalConnection.responseCode
+                }
+
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    throw GradleException("Failed to download ${artifact.name}: HTTP $responseCode ${finalConnection.responseMessage}")
+                }
+
+                finalConnection.inputStream.use { input ->
                     file.outputStream().use { output ->
                         input.copyTo(output)
                     }
@@ -179,11 +198,6 @@ tasks.register<Exec>("buildRpm") {
 
     val specFile = file("SPECS/hyphanet.spec")
     val topDir = rpmBuildRoot.asFile.absolutePath
-    
-    doFirst {
-        println("DEBUG: Content of spec file used for build:")
-        println(specFile.readText())
-    }
     
     commandLine(
         "/usr/bin/rpmbuild",
