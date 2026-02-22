@@ -31,7 +31,7 @@ The entire build process (downloading dependencies, verifying signatures, prepar
 
 2.  **Build the RPM:**
     ```bash
-    ./gradlew buildRpm
+    ./gradlew clean buildRpm
     ```
 
     *Note: The first run will download Gradle and all necessary dependencies.*
