@@ -36,7 +36,7 @@ val artifacts = listOf(
     Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79"),
 
     // Wrapper (Using SourceForge mirror for reliability)
-    Downloadable("wrapper.tar.gz", "https://sourceforge.net/projects/wrapper/files/wrapper_Wrapper_Source_Linux_x86-64_64/3.5.51/wrapper_linux_x86-64_3.5.51.tar.gz/download", "369adac7357f792f51a9d51954fc7107f6e7c7971a2b4d785e58bea918c09e93"),
+    Downloadable("wrapper.tar.gz", "https://sourceforge.net/projects/wrapper/files/wrapper_Wrapper_Source_Linux_x86-64_64/3.5.51/wrapper_linux_x86-64_3.5.51.tar.gz/download", "102283c78d1bbd1f1793dc5c42fb00d56b4205042f8dfb5f2f04252837c3ddaf"),
 
     // Seednodes
     Downloadable("seednodes.fref", "https://raw.githubusercontent.com/hyphanet/java_installer/refs/heads/next/offline/seednodes.fref", "1dc8da78a0062ae1796465c65f3b44e4277a06469c16921689fb2b7923281fff")
