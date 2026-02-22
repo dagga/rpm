@@ -67,7 +67,7 @@ jobs:
             if [ $? -eq 0 ]; then
                echo "SUCCESS: Existing key is valid and usable."
             else
-               echo "WARNING: Existing key is unusable (expired or wrong passphrase). Switching to auto-generation."
+               echo "ERROR: Existing key is unusable (expired or wrong passphrase). Switching to auto-generation."
                # Delete the broken key to avoid confusion
                gpg --batch --yes --delete-secret-keys "$GPG_KEY_NAME" || true
                gpg --batch --yes --delete-keys "$GPG_KEY_NAME" || true
@@ -81,14 +81,14 @@ jobs:
           # 3. Generate ephemeral key if needed
           if [ "$USE_GENERATED_KEY" = true ]; then
             echo "Generating ephemeral key..."
-            PASSPHRASE="buildpassword"
+            PASSPHRASE="hyphanet"
             cat >gen-key-script <<EOF
             %echo Generating a basic OpenPGP key
             Key-Type: RSA
             Key-Length: 2048
             Subkey-Type: RSA
             Subkey-Length: 2048
-            Name-Real: Hyphanet AutoBuilder
+            Name-Real: Hyphanet4Test
             Name-Email: ci@hyphanet.org
             Expire-Date: 0
             Passphrase: $PASSPHRASE
@@ -96,7 +96,7 @@ jobs:
             %echo done
           EOF
             gpg --batch --generate-key gen-key-script
-            GPG_KEY_NAME="Hyphanet AutoBuilder <ci@hyphanet.org>"
+            GPG_KEY_NAME="Hyphanet4Test"
           fi
 
           echo "GPG_KEY_NAME=$GPG_KEY_NAME" >> $GITHUB_ENV
