@@ -1,8 +1,5 @@
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
-# Hardcode systemd unit directory to avoid macro issues on non-RH systems (Ubuntu/Debian)
-%define systemd_unitdir /usr/lib/systemd/system
-
 # Disable debug info generation (Fix for Fedora/RHEL)
 %global debug_package %{nil}
 %global _debugsource_template %{nil}
@@ -53,8 +50,8 @@ communication.
 # --- 1. Directory Structure ---
 install -d -m 755 %{buildroot}%{install_dir}
 install -d -m 755 %{buildroot}%{install_dir}/lib
-# Use our custom hardcoded macro
-install -d -m 755 %{buildroot}%{systemd_unitdir}
+# Hardcode the path to avoid macro issues
+install -d -m 755 %{buildroot}/usr/lib/systemd/system
 install -d -m 750 %{buildroot}%{data_dir}
 install -d -m 750 %{buildroot}%{log_dir}
 install -d -m 755 %{buildroot}%{_prefix}/lib/sysusers.d
@@ -76,7 +73,8 @@ install -m 755 ./hyphanet-wrapper %{buildroot}%{install_dir}/
 install -m 755 ./hyphanet-service %{buildroot}%{install_dir}/
 
 # Install systemd unit and sysusers file
-install -m 644 ./hyphanet.service %{buildroot}%{systemd_unitdir}/hyphanet.service
+# Hardcode the path to avoid macro issues
+install -m 644 ./hyphanet.service %{buildroot}/usr/lib/systemd/system/hyphanet.service
 install -m 644 ./hyphanet.sysusers %{buildroot}%{_prefix}/lib/sysusers.d/hyphanet.conf
 
 # Install desktop file and icon file
@@ -152,7 +150,8 @@ fi
 %{install_dir}
 
 # System Files
-%{systemd_unitdir}/hyphanet.service
+# Hardcode the path to avoid macro issues
+/usr/lib/systemd/system/hyphanet.service
 %{_prefix}/lib/sysusers.d/hyphanet.conf
 %{_bindir}/hyphanet
 %{_datadir}/applications/hyphanet.desktop
