@@ -55,6 +55,11 @@ jobs:
         run: |
           echo "Importing GPG key..."
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+          
+          # Configure GPG for non-interactive use
+          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          gpg-connect-agent reloadagent /bye
         env:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
@@ -62,9 +67,20 @@ jobs:
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
-          # IMPORTANT: Replace with your actual GPG key name/email
-          GPG_KEY_NAME="None"
+          # Auto-detect the key name to avoid mismatch
+          GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^uid:' | head -n 1 | cut -d: -f10)
+          
+          if [ -z "$GPG_KEY_NAME" ]; then
+             echo "WARNING: Could not auto-detect key name. Using fallback 'None'."
+             GPG_KEY_NAME="None"
+          fi
+          
+          echo "Using GPG Key: $GPG_KEY_NAME"
           echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
+          echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
+          echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros
+          # Force GPG to use loopback mode for passphrase
+          echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --passphrase-fd 0 --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
 
       - name: Sign the RPM package
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
@@ -72,6 +88,8 @@ jobs:
           echo "Signing RPM package..."
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
           echo "RPM found at: ${RPM_PATH}"
+          
+          # Sign using the configured macro command which reads passphrase from stdin
           echo "${{ secrets.GPG_PASSPHRASE }}" | rpmsign --addsign "${RPM_PATH}"
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
