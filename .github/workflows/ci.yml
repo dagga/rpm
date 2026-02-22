@@ -38,40 +38,84 @@ jobs:
       - name: Build RPM with Gradle
         run: gradle buildRpm
         
-      - name: Import Signing GPG Key
+      - name: Setup GPG Key (Import or Generate)
+        id: setup_gpg
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
-          echo "Importing GPG key..."
-          echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
-          
-          # Configure GPG for non-interactive use (loopback mode)
+          # Configure GPG for non-interactive use
+          mkdir -p ~/.gnupg
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
           echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+          chmod 700 ~/.gnupg
           gpg-connect-agent reloadagent /bye
-        env:
-          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+
+          USE_GENERATED_KEY=false
+          
+          # 1. Try to import secret key if provided
+          if [ -n "${{ secrets.GPG_PRIVATE_KEY }}" ]; then
+            echo "Secret key found. Attempting import..."
+            echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
+            
+            # Detect key name
+            GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^uid:' | head -n 1 | cut -d: -f10)
+            PASSPHRASE="${{ secrets.GPG_PASSPHRASE }}"
+            
+            # 2. Test if the key is usable for signing
+            echo "Testing key validity..."
+            echo "test" | gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" -u "$GPG_KEY_NAME" --sign -o /dev/null 2>/dev/null
+            
+            if [ $? -eq 0 ]; then
+               echo "SUCCESS: Existing key is valid and usable."
+            else
+               echo "WARNING: Existing key is unusable (expired or wrong passphrase). Switching to auto-generation."
+               # Delete the broken key to avoid confusion
+               gpg --batch --yes --delete-secret-keys "$GPG_KEY_NAME" || true
+               gpg --batch --yes --delete-keys "$GPG_KEY_NAME" || true
+               USE_GENERATED_KEY=true
+            fi
+          else
+            echo "No secret key provided."
+            USE_GENERATED_KEY=true
+          fi
+
+          # 3. Generate ephemeral key if needed
+          if [ "$USE_GENERATED_KEY" = true ]; then
+            echo "Generating ephemeral key..."
+            PASSPHRASE="buildpassword"
+            cat >gen-key-script <<EOF
+            %echo Generating a basic OpenPGP key
+            Key-Type: RSA
+            Key-Length: 2048
+            Subkey-Type: RSA
+            Subkey-Length: 2048
+            Name-Real: Hyphanet AutoBuilder
+            Name-Email: ci@hyphanet.org
+            Expire-Date: 0
+            Passphrase: $PASSPHRASE
+            %commit
+            %echo done
+          EOF
+            gpg --batch --generate-key gen-key-script
+            GPG_KEY_NAME="Hyphanet AutoBuilder <ci@hyphanet.org>"
+          fi
+
+          echo "GPG_KEY_NAME=$GPG_KEY_NAME" >> $GITHUB_ENV
+          echo "GPG_PASSPHRASE=$PASSPHRASE" >> $GITHUB_ENV
+          
+          # Export public key for artifacts
+          gpg --export -a "$GPG_KEY_NAME" > public.key
 
       - name: Configure RPM GPG Key
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
-          echo "Configuring .rpmmacros for GPG signing..."
+          echo "Configuring .rpmmacros..."
+          echo "Using Key: $GPG_KEY_NAME"
           
-          # Auto-detect the key name (first secret key found)
-          GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^uid:' | head -n 1 | cut -d: -f10)
-          
-          if [ -z "$GPG_KEY_NAME" ]; then
-             echo "WARNING: Could not auto-detect key name. Using fallback 'None'."
-             GPG_KEY_NAME="None"
-          fi
-          
-          echo "Using GPG Key: $GPG_KEY_NAME"
-          
-          # Configure rpmmacros
-          echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
+          echo "%_gpg_name $GPG_KEY_NAME" > ~/.rpmmacros
           echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
           echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros
           
-          # Force GPG to use loopback mode for passphrase via custom sign command
+          # Command to force passphrase usage
           echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --passphrase-fd 0 --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
 
       - name: Sign the RPM package
@@ -81,13 +125,13 @@ jobs:
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
           echo "RPM found at: ${RPM_PATH}"
           
-          # Sign using the configured macro command which reads passphrase from stdin
-          echo "${{ secrets.GPG_PASSPHRASE }}" | rpmsign --addsign "${RPM_PATH}"
-        env:
-          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          # Sign using the passphrase (either from secret or the generated one)
+          echo "$GPG_PASSPHRASE" | rpmsign --addsign "${RPM_PATH}"
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v4
         with:
           name: hyphanet-rpm
-          path: ./RPMS/x86_64/*.rpm
+          path: |
+            ./RPMS/x86_64/*.rpm
+            public.key
