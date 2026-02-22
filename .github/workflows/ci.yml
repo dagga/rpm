@@ -2,9 +2,9 @@ name: Build and Sign RPM
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ master ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ master ]
   workflow_dispatch:
 
 jobs:
@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Fetch all history to ensure we have the latest commit
+          fetch-depth: 0
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
@@ -26,7 +26,6 @@ jobs:
       - name: Install build dependencies
         run: sudo apt-get update && sudo apt-get install -y rpm gnupg2
 
-      # Setup Gradle environment and add 'gradle' to PATH
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
@@ -37,14 +36,14 @@ jobs:
         run: |
           echo "Checking SPECS/hyphanet.spec content..."
           cat SPECS/hyphanet.spec
-          if grep -q "%define systemd_unitdir" SPECS/hyphanet.spec; then
-            echo "SUCCESS: File contains new macro definition."
+          # Verify if the hardcoded path is present
+          if grep -q "/usr/lib/systemd/system" SPECS/hyphanet.spec; then
+            echo "SUCCESS: File contains hardcoded systemd path."
           else
-            echo "ERROR: File DOES NOT contain new macro definition!"
+            echo "ERROR: File DOES NOT contain hardcoded systemd path!"
             exit 1
           fi
 
-      # Use 'gradle' command instead of './gradlew' to avoid needing the wrapper JAR in repo
       - name: Download Assets
         run: gradle downloadAssets --no-daemon --refresh-dependencies
 
@@ -52,7 +51,7 @@ jobs:
         run: gradle buildRpm
         
       - name: Import Signing GPG Key
-        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
           echo "Importing GPG key..."
           echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
@@ -60,7 +59,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
 
       - name: Configure RPM GPG Key
-        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
           echo "Configuring .rpmmacros for GPG signing..."
           # IMPORTANT: Replace with your actual GPG key name/email
@@ -68,7 +67,7 @@ jobs:
           echo "%_gpg_name ${GPG_KEY_NAME}" > ~/.rpmmacros
 
       - name: Sign the RPM package
-        if: (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')) || github.event_name == 'workflow_dispatch'
+        if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
           echo "Signing RPM package..."
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
