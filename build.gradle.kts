@@ -36,7 +36,7 @@ val artifacts = listOf(
     Downloadable("unbescape.jar", "https://repo1.maven.org/maven2/org/unbescape/unbescape/1.1.6.RELEASE/unbescape-1.1.6.RELEASE.jar", "597cf87d5b1a4f385b9d1cec974b7b483abb3ee85fc5b3f8b62af8e4bec95c2c"),
     Downloadable("slf4j-api.jar", "https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.25/slf4j-api-1.7.25.jar", "18c4a0095d5c1da6b817592e767bb23d29dd2f560ad74df75ff3961dbde25b79"),
 
-    // Wrapper (Back to official Tanuki URL with proper headers)
+    // Wrapper (Back to official Tanuki URL, simple download)
     Downloadable("wrapper.tar.gz", "https://download.tanukisoftware.com/wrapper/3.5.51/wrapper-linux-x86-64-3.5.51.tar.gz", "271571fcd630dc0fee14d102328c0a345ef96ef96711555bb6f5f5f7c42c489c"),
 
     // Seednodes
@@ -59,34 +59,8 @@ tasks.register("downloadAssets") {
             if (!file.exists()) {
                 println("Downloading ${artifact.name}...")
                 val url = URI(artifact.url).toURL()
-                val connection = url.openConnection() as HttpURLConnection
-                
-                // Mimic a real browser to avoid 403 Forbidden from Tanuki Software
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                connection.setRequestProperty("Referer", "https://wrapper.tanukisoftware.com/")
-                connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-                connection.setInstanceFollowRedirects(true)
-                connection.connect()
-                
-                // Handle redirects manually if needed
-                var responseCode = connection.responseCode
-                var finalConnection = connection
-                
-                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
-                    val newUrl = connection.getHeaderField("Location")
-                    println("Redirecting to $newUrl")
-                    finalConnection = URI(newUrl).toURL().openConnection() as HttpURLConnection
-                    finalConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
-                    finalConnection.setRequestProperty("Referer", "https://wrapper.tanukisoftware.com/")
-                    finalConnection.connect()
-                    responseCode = finalConnection.responseCode
-                }
-
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    throw GradleException("Failed to download ${artifact.name}: HTTP $responseCode ${finalConnection.responseMessage}")
-                }
-
-                finalConnection.inputStream.use { input ->
+                // Simple download without complex headers
+                url.openStream().use { input ->
                     file.outputStream().use { output ->
                         input.copyTo(output)
                     }
