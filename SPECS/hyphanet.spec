@@ -16,7 +16,7 @@
 
 # Default values if not provided by rpmbuild command line
 %{!?version: %define version 0.7.5}
-%{!?build_id: %define build_id 1505}
+%{!?build_id: %define build_id 1506}
 
 Name:           hyphanet
 Version:        %{version}
