@@ -30,17 +30,17 @@ fi
 
 # --- Local Files ---
 LOCAL_FILES=(
-    "${SCRIPT_DIR}/wrapper.conf"
-    "${SCRIPT_DIR}/freenet.ini"
-    "${SCRIPT_DIR}/hyphanet-service"
-    "${SCRIPT_DIR}/hyphanet.service"
-    "${SCRIPT_DIR}/hyphanet.sysusers"
-    "${SCRIPT_DIR}/hyphanet.desktop"
-    "${SCRIPT_DIR}/hyphanet-start.desktop"
-    "${SCRIPT_DIR}/hyphanet-stop.desktop"
-    "${SCRIPT_DIR}/hyphanet.png"
-    "${SCRIPT_DIR}/org.hyphanet.service.policy"
-    "${SCRIPT_DIR}/org.hyphanet.hyphanet.metainfo.xml"
+    "${SCRIPT_DIR}/inputs/wrapper.conf"
+    "${SCRIPT_DIR}/inputs/freenet.ini"
+    "${SCRIPT_DIR}/inputs/hyphanet-service"
+    "${SCRIPT_DIR}/inputs/hyphanet.service"
+    "${SCRIPT_DIR}/inputs/hyphanet.sysusers"
+    "${SCRIPT_DIR}/inputs/hyphanet.desktop"
+    "${SCRIPT_DIR}/inputs/hyphanet-start.desktop"
+    "${SCRIPT_DIR}/inputs/hyphanet-stop.desktop"
+    "${SCRIPT_DIR}/inputs/hyphanet.png"
+    "${SCRIPT_DIR}/inputs/org.hyphanet.service.policy"
+    "${SCRIPT_DIR}/inputs/org.hyphanet.hyphanet.metainfo.xml"
 )
 
 # --- Security Check ---
