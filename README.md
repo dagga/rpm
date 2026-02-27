@@ -85,6 +85,32 @@ After installation, you will find **Hyphanet** in your application menu.
 *   `*.desktop`: Desktop entry files for the application menu.
 *   `org.hyphanet.service.policy`: PolicyKit configuration for GUI management.
 
+## Continuous Integration (CI)
+
+The CI workflow, defined in `.github/workflows/ci.yml`, automates the build and signing of the RPM package whenever changes are pushed to the `master` branch.
+
+### Workflow Steps
+1.  **Setup**: Checks out the code, sets up Java and Gradle, and installs `rpm` and `gnupg2`.
+2.  **Build**: Runs `./gradlew buildRpm` to generate the RPM.
+3.  **GPG Signing**:
+    *   If run on the `master` branch (or manually triggered), the workflow attempts to sign the RPM.
+    *   It first tries to import a GPG private key from the `GPG_PRIVATE_KEY` repository secret.
+    *   If the secret is missing or the key is invalid, it generates a temporary, ephemeral GPG key for signing.
+4.  **Sign RPM**: Uses `rpmsign` to sign the generated package.
+5.  **Upload Artifacts**: Uploads the signed RPM and the public GPG key as build artifacts.
+
+### CI Hacks and Workarounds
+
+*   **GPG Non-Interactive Mode**:
+    *   The workflow configures GPG to run in a non-interactive (loopback) mode. This is necessary because a CI runner cannot prompt for a passphrase.
+    *   The passphrase is provided via a pipe to the `rpmsign` command.
+
+*   **Ephemeral GPG Key**:
+    *   The ability to auto-generate a GPG key ensures that the build can succeed even without access to repository secrets (e.g., in a fork). This allows for testing the complete build and sign process in any environment.
+
+*   **Custom RPM Sign Command**:
+    *   A custom `~/.rpmmacros` file is created to override the default `rpmsign` command. This ensures that GPG is called with the correct parameters for a non-interactive environment (`--pinentry-mode loopback`, `--passphrase-fd 0`).
+
 ## Updating Hyphanet Version
 
 When a new version of Hyphanet is released, follow this procedure to update the RPM package:

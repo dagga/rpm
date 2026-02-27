@@ -189,6 +189,12 @@ tasks.register<Exec>("prepareSources") {
         File(root, "BUILD").mkdirs()
         File(root, "RPMS").mkdirs()
         File(root, "SRPMS").mkdirs()
+        
+        // Copy the spec file from root to SPECS
+        copy {
+            from("hyphanet.spec")
+            into("SPECS")
+        }
     }
 
     commandLine("./prepare_sources.sh")
@@ -200,6 +206,7 @@ tasks.register<Exec>("prepareSources") {
     
     inputs.files(
         "prepare_sources.sh",
+        "hyphanet.spec",
         "wrapper.conf",
         "freenet.ini",
         "hyphanet-service",
@@ -264,5 +271,6 @@ tasks.named("clean") {
         delete(layout.projectDirectory.dir("BUILD"))
         delete(layout.projectDirectory.dir("BUILDROOT"))
         delete(layout.projectDirectory.dir("SRPMS"))
+        delete(layout.projectDirectory.dir("SPECS"))
     }
 }
