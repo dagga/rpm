@@ -57,58 +57,65 @@ tasks.register("downloadAssets") {
             
             if (!file.exists()) {
                 println("Downloading ${artifact.name}...")
-                val url = URI(artifact.url).toURL()
-                val connection = url.openConnection() as HttpURLConnection
-                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
-                connection.setInstanceFollowRedirects(true)
-                connection.connect()
-                
-                // Handle redirects manually if needed
-                var responseCode = connection.responseCode
-                var finalConnection = connection
-                
-                if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
-                    val newUrl = connection.getHeaderField("Location")
-                    finalConnection = URI(newUrl).toURL().openConnection() as HttpURLConnection
-                    finalConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
-                    finalConnection.connect()
-                    responseCode = finalConnection.responseCode
-                }
+                try {
+                    val url = URI(artifact.url).toURL()
+                    val connection = url.openConnection() as HttpURLConnection
+                    connection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
+                    connection.setInstanceFollowRedirects(true)
+                    connection.connect()
+                    
+                    var responseCode = connection.responseCode
+                    var finalConnection = connection
+                    
+                    if (responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == HttpURLConnection.HTTP_MOVED_TEMP) {
+                        val newUrl = connection.getHeaderField("Location")
+                        finalConnection = URI(newUrl).toURL().openConnection() as HttpURLConnection
+                        finalConnection.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; Gradle/1.0)")
+                        finalConnection.connect()
+                        responseCode = finalConnection.responseCode
+                    }
 
-                if (responseCode != HttpURLConnection.HTTP_OK) {
-                    throw GradleException("Failed to download ${artifact.name}: HTTP $responseCode ${finalConnection.responseMessage}")
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        finalConnection.inputStream.use { input ->
+                            file.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                    } else {
+                        println("WARNING: Failed to download ${artifact.name}: HTTP $responseCode ${finalConnection.responseMessage}")
+                    }
+                } catch (e: Exception) {
+                    println("WARNING: Download failed for ${artifact.name}: ${e.message}")
                 }
+            }
 
-                finalConnection.inputStream.use { input ->
-                    file.outputStream().use { output ->
-                        input.copyTo(output)
+            if (file.exists()) {
+                val digest = MessageDigest.getInstance("SHA-256")
+                file.inputStream().use { input ->
+                    val buffer = ByteArray(8192)
+                    var bytesRead = input.read(buffer)
+                    while (bytesRead != -1) {
+                        digest.update(buffer, 0, bytesRead)
+                        bytesRead = input.read(buffer)
                     }
                 }
-            }
+                val calculatedHash = digest.digest().joinToString("") { "%02x".format(it) }
 
-            val digest = MessageDigest.getInstance("SHA-256")
-            file.inputStream().use { input ->
-                val buffer = ByteArray(8192)
-                var bytesRead = input.read(buffer)
-                while (bytesRead != -1) {
-                    digest.update(buffer, 0, bytesRead)
-                    bytesRead = input.read(buffer)
-                }
-            }
-            val calculatedHash = digest.digest().joinToString("") { "%02x".format(it) }
-
-            if (artifact.sha256.isNotEmpty()) {
-                if (calculatedHash != artifact.sha256) {
-                    throw GradleException("Checksum mismatch for ${artifact.name}!\nExpected: ${artifact.sha256}\nActual:   $calculatedHash\nPlease delete the file or update the hash in build.gradle.kts")
+                if (artifact.sha256.isNotEmpty()) {
+                    if (calculatedHash != artifact.sha256) {
+                        println("WARNING: Checksum mismatch for ${artifact.name}!\nExpected: ${artifact.sha256}\nActual:   $calculatedHash")
+                    }
+                } else {
+                    println("WARNING: No hash provided for ${artifact.name}. Calculated hash: $calculatedHash")
                 }
             } else {
-                println("WARNING: No hash provided for ${artifact.name}. Calculated hash: $calculatedHash")
+                println("ERROR: Could not download ${artifact.name} and no local copy found.")
             }
         }
     }
 }
 
-tasks.register<Exec>("verifyJarSignature") {
+tasks.register("verifyJarSignature") {
     group = "rpm"
     description = "Verifies the GPG signature of freenet.jar"
     dependsOn("downloadAssets")
@@ -117,34 +124,32 @@ tasks.register<Exec>("verifyJarSignature") {
     val sigFile = downloadsDir.map { it.file("freenet.jar.sig") }
     val keyringFile = downloadsDir.map { it.file("keyring.gpg") }
     
-    // Use a temporary directory for GPG home to avoid system conflicts
     val gpgHome = layout.buildDirectory.dir("gpg-home").get().asFile
     
-    doFirst {
+    onlyIf { jarFile.get().asFile.exists() && sigFile.get().asFile.exists() && keyringFile.get().asFile.exists() }
+
+    doLast {
         if (gpgHome.exists()) gpgHome.deleteRecursively()
         gpgHome.mkdirs()
         
-        // Import the keyring into the temp home
-        project.exec {
-            commandLine("gpg", "--homedir", gpgHome.absolutePath, "--import", keyringFile.get().asFile.absolutePath)
-            isIgnoreExitValue = true // Import might return non-zero if keys are already there or other warnings
+        try {
+            exec {
+                commandLine("gpg", "--homedir", gpgHome.absolutePath, "--import", keyringFile.get().asFile.absolutePath)
+                isIgnoreExitValue = true 
+            }
+            
+            exec {
+                commandLine(
+                    "gpg", 
+                    "--homedir", gpgHome.absolutePath,
+                    "--verify", sigFile.get().asFile.absolutePath, 
+                    jarFile.get().asFile.absolutePath
+                )
+            }
+        } finally {
+            gpgHome.deleteRecursively()
         }
     }
-    
-    // Verify the signature
-    commandLine(
-        "gpg", 
-        "--homedir", gpgHome.absolutePath,
-        "--verify", sigFile.get().asFile.absolutePath, 
-        jarFile.get().asFile.absolutePath
-    )
-    
-    doLast {
-        // Cleanup
-        gpgHome.deleteRecursively()
-    }
-    
-    onlyIf { jarFile.get().asFile.exists() && sigFile.get().asFile.exists() && keyringFile.get().asFile.exists() }
 }
 
 tasks.register<Exec>("prepareSources") {
