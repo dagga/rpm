@@ -56,15 +56,14 @@ jobs:
             echo "Secret key found. Attempting import..."
             echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
             
-            # Detect key ID (more robust than name)
             GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^sec:' | head -n 1 | cut -d: -f5)
             PASSPHRASE="${{ secrets.GPG_PASSPHRASE }}"
             
-            # 2. Test if the key is usable for signing
             echo "Testing key validity for ID: $GPG_KEY_NAME"
-            echo "test" | gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" -u "$GPG_KEY_NAME" --sign -o /dev/null 2>/dev/null
             
-            if [ $? -eq 0 ]; then
+            # 2. Test if the key is usable for signing.
+            # This 'if' structure prevents the script from exiting on failure.
+            if echo "test" | gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" -u "$GPG_KEY_NAME" --sign -o /dev/null 2>/dev/null; then
                echo "SUCCESS: Existing key is valid and usable."
             else
                echo "ERROR: Existing key is unusable (expired or wrong passphrase). Switching to auto-generation."
@@ -96,7 +95,6 @@ jobs:
             %echo done
           EOF
             gpg --batch --generate-key gen-key-script
-            # Detect the generated key ID
             GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^sec:' | head -n 1 | cut -d: -f5)
           fi
 
