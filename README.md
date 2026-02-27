@@ -6,7 +6,7 @@ The build process is fully automated using **Gradle**, ensuring reproducibility 
 
 ## Prerequisites
 
-You need a Linux system (Fedora, RHEL, CentOS, AlmaLinux, etc.) with the following installed:
+You need a Linux system (Fedora, RHEL, CentOS, AlmaLinux, RockyLinux, etc.) with the following installed:
 
 1.  **Java 21** (Max required for Gradle 8.14+)
 2.  **rpm-build** (Required to build the RPM)
@@ -80,10 +80,10 @@ After installation, you will find **Hyphanet** in your application menu.
 *   `build.gradle.kts`: Main build script defining dependencies and tasks.
 *   `prepare_sources.sh`: Script called by Gradle to assemble the source tarball.
 *   `hyphanet.spec`: The RPM specification file.
-*   `wrapper.conf`, `freenet.ini`: Default configuration files.
-*   `hyphanet-service`: Control script for the service.
-*   `*.desktop`: Desktop entry files for the application menu.
-*   `org.hyphanet.service.policy`: PolicyKit configuration for GUI management.
+*   `inputs/wrapper.conf`, `freenet.ini`: Default configuration files.
+*   `inputs/hyphanet-service`: Control script for the service.
+*   `inputs/*.desktop`: Desktop entry files for the application menu.
+*   `inputs/org.hyphanet.service.policy`: PolicyKit configuration for GUI management.
 
 ## Continuous Integration (CI)
 
