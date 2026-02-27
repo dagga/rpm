@@ -56,12 +56,12 @@ jobs:
             echo "Secret key found. Attempting import..."
             echo "${{ secrets.GPG_PRIVATE_KEY }}" | gpg --batch --import
             
-            # Detect key name
-            GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^uid:' | head -n 1 | cut -d: -f10)
+            # Detect key ID (more robust than name)
+            GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^sec:' | head -n 1 | cut -d: -f5)
             PASSPHRASE="${{ secrets.GPG_PASSPHRASE }}"
             
             # 2. Test if the key is usable for signing
-            echo "Testing key validity..."
+            echo "Testing key validity for ID: $GPG_KEY_NAME"
             echo "test" | gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" -u "$GPG_KEY_NAME" --sign -o /dev/null 2>/dev/null
             
             if [ $? -eq 0 ]; then
@@ -96,7 +96,8 @@ jobs:
             %echo done
           EOF
             gpg --batch --generate-key gen-key-script
-            GPG_KEY_NAME="Hyphanet4Test"
+            # Detect the generated key ID
+            GPG_KEY_NAME=$(gpg --list-secret-keys --with-colons | grep '^sec:' | head -n 1 | cut -d: -f5)
           fi
 
           echo "GPG_KEY_NAME=$GPG_KEY_NAME" >> $GITHUB_ENV
