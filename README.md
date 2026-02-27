@@ -79,11 +79,37 @@ After installation, you will find **Hyphanet** in your application menu.
 
 *   `build.gradle.kts`: Main build script defining dependencies and tasks.
 *   `prepare_sources.sh`: Script called by Gradle to assemble the source tarball.
-*   `SPECS/hyphanet.spec`: The RPM specification file.
+*   `hyphanet.spec`: The RPM specification file.
 *   `wrapper.conf`, `freenet.ini`: Default configuration files.
 *   `hyphanet-service`: Control script for the service.
 *   `*.desktop`: Desktop entry files for the application menu.
 *   `org.hyphanet.service.policy`: PolicyKit configuration for GUI management.
+
+## Continuous Integration (CI)
+
+The CI workflow, defined in `.github/workflows/ci.yml`, automates the build and signing of the RPM package whenever changes are pushed to the `master` branch.
+
+### Workflow Steps
+1.  **Setup**: Checks out the code, sets up Java and Gradle, and installs `rpm` and `gnupg2`.
+2.  **Build**: Runs `./gradlew buildRpm` to generate the RPM.
+3.  **GPG Signing**:
+    *   If run on the `master` branch (or manually triggered), the workflow attempts to sign the RPM.
+    *   It first tries to import a GPG private key from the `GPG_PRIVATE_KEY` repository secret.
+    *   If the secret is missing or the key is invalid, it generates a temporary, ephemeral GPG key for signing.
+4.  **Sign RPM**: Uses `rpmsign` to sign the generated package.
+5.  **Upload Artifacts**: Uploads the signed RPM and the public GPG key as build artifacts.
+
+### CI Hacks and Workarounds
+
+*   **GPG Non-Interactive Mode**:
+    *   The workflow configures GPG to run in a non-interactive (loopback) mode. This is necessary because a CI runner cannot prompt for a passphrase.
+    *   The passphrase is provided via a pipe to the `rpmsign` command.
+
+*   **Ephemeral GPG Key**:
+    *   The ability to auto-generate a GPG key ensures that the build can succeed even without access to repository secrets (e.g., in a fork). This allows for testing the complete build and sign process in any environment.
+
+*   **Custom RPM Sign Command**:
+    *   A custom `~/.rpmmacros` file is created to override the default `rpmsign` command. This ensures that GPG is called with the correct parameters for a non-interactive environment (`--pinentry-mode loopback`, `--passphrase-fd 0`).
 
 ## Updating Hyphanet Version
 
@@ -100,7 +126,7 @@ When a new version of Hyphanet is released, follow this procedure to update the 
 4.  **Verify Dependencies**:
     *   If other dependencies (like `wrapper`, `bcprov`, etc.) have changed, update their URLs and hashes as well.
 5.  **Update SPEC Defaults**:
-    *   Open `SPECS/hyphanet.spec`.
+    *   Open `hyphanet.spec`.
     *   Update the default values to match the new version. This ensures the spec file is valid even if used without Gradle.
     *   Look for:
         ```spec
@@ -131,7 +157,7 @@ To ensure consistency between the Gradle build script and the RPM specification,
         specFile.absolutePath
     )
     ```
-3.  **Usage in SPEC file**: The `SPECS/hyphanet.spec` file uses these definitions to set the package version and release, ensuring the RPM metadata always matches the build configuration.
+3.  **Usage in SPEC file**: The `hyphanet.spec` file uses these definitions to set the package version and release, ensuring the RPM metadata always matches the build configuration.
 
 ### RPM Output Directory (RPMS.x86_64)
 On some systems or configurations, `rpmbuild` may output the generated RPMs into a directory named `RPMS.x86_64` (with a dot) instead of the standard `RPMS/x86_64` (nested directory).
@@ -144,7 +170,7 @@ To handle this inconsistency:
 This ensures that the final artifact is always located in `RPMS/x86_64/`, regardless of the underlying `rpmbuild` behavior.
 
 ### SPEC File Globals
-The `SPECS/hyphanet.spec` file starts with several `%global` definitions. These are important for ensuring a clean and consistent build, especially in automated environments:
+The `hyphanet.spec` file starts with several `%global` definitions. These are important for ensuring a clean and consistent build, especially in automated environments:
 
 *   **Debug Packages**:
     ```spec
