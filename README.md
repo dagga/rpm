@@ -85,8 +85,37 @@ After installation, you will find **Hyphanet** in your application menu.
 *   `*.desktop`: Desktop entry files for the application menu.
 *   `org.hyphanet.service.policy`: PolicyKit configuration for GUI management.
 
-## Versioning Hack
+## Updating Hyphanet Version
 
+When a new version of Hyphanet is released, follow this procedure to update the RPM package:
+
+1.  **Open `build.gradle.kts`**.
+2.  **Update Version Variables**:
+    *   Change `appVersion` to the new version number (e.g., `"0.7.6"`).
+    *   Change `buildId` to the new build tag (e.g., `"01507"`).
+3.  **Update Checksums**:
+    *   The URLs for `freenet.jar`, `freenet.jar.sig`, and `freenet-ext.jar` are automatically constructed using the `buildId`.
+    *   However, you **must** update the `sha256` hash for these artifacts in the `artifacts` list.
+    *   *Tip*: You can temporarily set the hash to an empty string `""` or a dummy value, run the build, and copy the calculated hash from the error message or warning in the console output.
+4.  **Verify Dependencies**:
+    *   If other dependencies (like `wrapper`, `bcprov`, etc.) have changed, update their URLs and hashes as well.
+5.  **Update SPEC Defaults**:
+    *   Open `SPECS/hyphanet.spec`.
+    *   Update the default values to match the new version. This ensures the spec file is valid even if used without Gradle.
+    *   Look for:
+        ```spec
+        %{!?version: %define version 0.7.5}
+        %{!?build_id: %define build_id 1506}
+        ```
+6.  **Run the Build**:
+    ```bash
+    ./gradlew clean buildRpm
+    ```
+7.  **Test**: Install the generated RPM and verify that Hyphanet starts correctly.
+
+## Build Hacks
+
+### Versioning Consistency
 To ensure consistency between the Gradle build script and the RPM specification, we use a specific mechanism to pass version variables:
 
 1.  **Definition in Gradle**: The `appVersion` and `buildId` variables are defined at the top of `build.gradle.kts`.
@@ -103,3 +132,13 @@ To ensure consistency between the Gradle build script and the RPM specification,
     )
     ```
 3.  **Usage in SPEC file**: The `SPECS/hyphanet.spec` file uses these definitions to set the package version and release, ensuring the RPM metadata always matches the build configuration.
+
+### RPM Output Directory (RPMS.x86_64)
+On some systems or configurations, `rpmbuild` may output the generated RPMs into a directory named `RPMS.x86_64` (with a dot) instead of the standard `RPMS/x86_64` (nested directory).
+
+To handle this inconsistency:
+1.  The `buildRpm` task checks for the existence of `RPMS.x86_64` after the build completes.
+2.  If found, it moves the contents to the standard `RPMS/x86_64` directory.
+3.  It then deletes the non-standard `RPMS.x86_64` directory.
+
+This ensures that the final artifact is always located in `RPMS/x86_64/`, regardless of the underlying `rpmbuild` behavior.
