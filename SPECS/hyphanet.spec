@@ -1,3 +1,24 @@
+#!/bin/bash
+#
+# This file is part of the Hyphanet RPM packaging project.
+#
+# Copyright (c) 2026 nicolas hernandez <hernicatgmail.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+#
+
 # GLOBAL & MACROS
 # ------------------------------------------------------------------------------
 # Disable debug info generation (Fix for Fedora/RHEL)
@@ -171,5 +192,5 @@ fi
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
-* Wed Feb 11 2026 Ton Nom <hernic@gmail.com> - 0.7.5-1505.1
+* Wed Feb 27 2026 Ton Nom <hernicatgmail.com> - 0.7.5-1506.1
 - Initial build of the package
