@@ -6,7 +6,7 @@ The build process is fully automated using **Gradle**, ensuring reproducibility 
 
 ## Prerequisites
 
-You need a Linux system (Fedora, RHEL, CentOS, AlmaLinux, etc.) with the following installed:
+You need a Linux system (Fedora, RHEL, CentOS, AlmaLinux, RockyLinux, etc.) with the following installed:
 
 1.  **Java 21** (Max required for Gradle 8.14+)
 2.  **rpm-build** (Required to build the RPM)
