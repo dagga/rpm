@@ -42,9 +42,10 @@ jobs:
         id: setup_gpg
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
-          # Configure GPG for non-interactive use
+          # Configure GPG Agent for non-interactive use and presetting
           mkdir -p ~/.gnupg
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+          echo "allow-preset-passphrase" >> ~/.gnupg/gpg-agent.conf
           echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
           chmod 700 ~/.gnupg
           gpg-connect-agent reloadagent /bye
@@ -61,8 +62,7 @@ jobs:
             
             echo "Testing key validity for ID: $GPG_KEY_NAME"
             
-            # 2. Test if the key is usable for signing.
-            # Temporarily disable fail-fast (`set -e`) to handle the exit code manually.
+            # 2. Test if the key is usable.
             set +e
             echo "test" | gpg --batch --yes --pinentry-mode loopback --passphrase "$PASSPHRASE" -u "$GPG_KEY_NAME" --sign -o /dev/null 2>/dev/null
             GPG_EXIT_CODE=$?
@@ -72,7 +72,6 @@ jobs:
                echo "SUCCESS: Existing key is valid and usable."
             else
                echo "ERROR: Existing key is unusable (exit code $GPG_EXIT_CODE). Switching to auto-generation."
-               # Delete the broken key to avoid confusion
                gpg --batch --yes --delete-secret-keys "$GPG_KEY_NAME" || true
                gpg --batch --yes --delete-keys "$GPG_KEY_NAME" || true
                USE_GENERATED_KEY=true
@@ -104,7 +103,19 @@ jobs:
           fi
 
           echo "GPG_KEY_NAME=$GPG_KEY_NAME" >> $GITHUB_ENV
-          echo "GPG_PASSPHRASE=$PASSPHRASE" >> $GITHUB_ENV
+          
+          # 4. Preset the passphrase in gpg-agent
+          # This avoids piping the password to rpmsign, which is flaky in CI
+          KEYGRIP=$(gpg --list-secret-keys --with-colons "$GPG_KEY_NAME" | grep '^grp:' | head -n 1 | cut -d: -f10)
+          echo "Presetting passphrase for Keygrip: $KEYGRIP"
+          
+          if [ -x /usr/lib/gnupg/gpg-preset-passphrase ]; then
+             echo "$PASSPHRASE" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP"
+          elif [ -x /usr/libexec/gpg-preset-passphrase ]; then
+             echo "$PASSPHRASE" | /usr/libexec/gpg-preset-passphrase --preset "$KEYGRIP"
+          else
+             echo "WARNING: gpg-preset-passphrase not found. Signing might fail."
+          fi
           
           # Export public key for artifacts
           gpg --export -a "$GPG_KEY_NAME" > public.key
@@ -119,8 +130,8 @@ jobs:
           echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
           echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros
           
-          # Command to force passphrase usage
-          echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --passphrase-fd 0 --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
+          # Removed --passphrase-fd 0 because we are using gpg-preset-passphrase
+          echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
 
       - name: Sign the RPM package
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
@@ -129,8 +140,8 @@ jobs:
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
           echo "RPM found at: ${RPM_PATH}"
           
-          # Sign using the passphrase (either from secret or the generated one)
-          echo "$GPG_PASSPHRASE" | rpmsign --addsign "${RPM_PATH}"
+          # No piping needed, agent has the passphrase
+          rpmsign --addsign "${RPM_PATH}"
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v4
