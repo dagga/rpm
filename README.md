@@ -142,3 +142,21 @@ To handle this inconsistency:
 3.  It then deletes the non-standard `RPMS.x86_64` directory.
 
 This ensures that the final artifact is always located in `RPMS/x86_64/`, regardless of the underlying `rpmbuild` behavior.
+
+### SPEC File Globals
+The `SPECS/hyphanet.spec` file starts with several `%global` definitions. These are important for ensuring a clean and consistent build, especially in automated environments:
+
+*   **Debug Packages**:
+    ```spec
+    %global debug_package %{nil}
+    %global _debugsource_template %{nil}
+    %undefine _debugsource_packages
+    %undefine _debuginfo_packages
+    ```
+    This block disables the automatic generation of `debuginfo` and `debugsource` packages. Since this project packages pre-compiled Java binaries, these debug packages are unnecessary and can cause issues on certain build systems (like Fedora/RHEL).
+
+*   **Post-install Scripts**:
+    ```spec
+    %global __os_install_post %{nil}
+    ```
+    This line disables the automatic post-install scripts that `rpmbuild` might run. This gives us full control over the installation process in the `%post` section of the spec file.
