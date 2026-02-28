@@ -42,10 +42,9 @@ jobs:
         id: setup_gpg
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
-          # Configure GPG Agent for non-interactive use and presetting
+          # Configure GPG for non-interactive use
           mkdir -p ~/.gnupg
           echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          echo "allow-preset-passphrase" >> ~/.gnupg/gpg-agent.conf
           echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
           chmod 700 ~/.gnupg
           gpg-connect-agent reloadagent /bye
@@ -103,19 +102,7 @@ jobs:
           fi
 
           echo "GPG_KEY_NAME=$GPG_KEY_NAME" >> $GITHUB_ENV
-          
-          # 4. Preset the passphrase in gpg-agent
-          # This avoids piping the password to rpmsign, which is flaky in CI
-          KEYGRIP=$(gpg --list-secret-keys --with-colons "$GPG_KEY_NAME" | grep '^grp:' | head -n 1 | cut -d: -f10)
-          echo "Presetting passphrase for Keygrip: $KEYGRIP"
-          
-          if [ -x /usr/lib/gnupg/gpg-preset-passphrase ]; then
-             echo "$PASSPHRASE" | /usr/lib/gnupg/gpg-preset-passphrase --preset "$KEYGRIP"
-          elif [ -x /usr/libexec/gpg-preset-passphrase ]; then
-             echo "$PASSPHRASE" | /usr/libexec/gpg-preset-passphrase --preset "$KEYGRIP"
-          else
-             echo "WARNING: gpg-preset-passphrase not found. Signing might fail."
-          fi
+          echo "GPG_PASSPHRASE=$PASSPHRASE" >> $GITHUB_ENV
           
           # Export public key for artifacts
           gpg --export -a "$GPG_KEY_NAME" > public.key
@@ -130,8 +117,8 @@ jobs:
           echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
           echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros
           
-          # Removed --passphrase-fd 0 because we are using gpg-preset-passphrase
-          echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
+          # Use standard signing command but ensure pinentry-mode is loopback
+          echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --passphrase-fd 0 --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
 
       - name: Sign the RPM package
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
@@ -140,8 +127,15 @@ jobs:
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
           echo "RPM found at: ${RPM_PATH}"
           
-          # No piping needed, agent has the passphrase
-          rpmsign --addsign "${RPM_PATH}"
+          # Use a temporary script to handle the passphrase piping cleanly
+          # This avoids issues with direct piping to rpmsign in some shells
+          echo "#!/bin/bash" > sign-rpm.sh
+          echo "rpmsign --addsign \"\$1\"" >> sign-rpm.sh
+          chmod +x sign-rpm.sh
+          
+          # Use 'expect' or just simple pipe. Let's try simple pipe again but with explicit GPG_TTY
+          export GPG_TTY=$(tty)
+          echo "$GPG_PASSPHRASE" | ./sign-rpm.sh "${RPM_PATH}"
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v4
