@@ -192,5 +192,5 @@ fi
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
-* Wed Feb 27 2026 Ton Nom <hernicatgmail.com> - 0.7.5-1506.1
+* Fri Feb 27 2026 Ton Nom <hernicatgmail.com> - 0.7.5-1506.1
 - Initial build of the package
