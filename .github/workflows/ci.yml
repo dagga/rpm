@@ -104,8 +104,12 @@ jobs:
           echo "GPG_KEY_NAME=$GPG_KEY_NAME" >> $GITHUB_ENV
           echo "GPG_PASSPHRASE=$PASSPHRASE" >> $GITHUB_ENV
           
-          # Export public key for artifacts
+          # Export public key for artifacts AND for RPM import
           gpg --export -a "$GPG_KEY_NAME" > public.key
+          
+          # Import the key into RPM database
+          echo "Importing public key into RPM database..."
+          sudo rpm --import public.key
 
       - name: Configure RPM GPG Key
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
@@ -113,12 +117,31 @@ jobs:
           echo "Configuring .rpmmacros..."
           echo "Using Key: $GPG_KEY_NAME"
           
+          # Create a temporary file for the passphrase
+          echo "$GPG_PASSPHRASE" > /tmp/gpg-passphrase
+          chmod 600 /tmp/gpg-passphrase
+          
+          # Create a wrapper script for GPG
+          cat > /tmp/gpg-wrapper.sh <<EOF
+          #!/bin/bash
+          /usr/bin/gpg --batch --pinentry-mode loopback --passphrase-file /tmp/gpg-passphrase "\$@"
+          EOF
+          chmod +x /tmp/gpg-wrapper.sh
+          
+          # Verify the wrapper works
+          echo "Verifying GPG wrapper..."
+          echo "test" | /tmp/gpg-wrapper.sh -u "$GPG_KEY_NAME" --sign -o /dev/null
+          if [ $? -ne 0 ]; then
+             echo "CRITICAL: GPG wrapper failed to sign!"
+             exit 1
+          fi
+          
           echo "%_gpg_name $GPG_KEY_NAME" > ~/.rpmmacros
           echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
-          echo "%_gpgbin /usr/bin/gpg" >> ~/.rpmmacros
+          echo "%_gpgbin /tmp/gpg-wrapper.sh" >> ~/.rpmmacros
           
-          # Use standard signing command but ensure pinentry-mode is loopback
-          echo "%__gpg_sign_cmd %{__gpg} gpg --force-v3-sigs --batch --verbose --no-armor --passphrase-fd 0 --pinentry-mode loopback --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
+          # Simplified macro using the wrapper
+          echo "%__gpg_sign_cmd %{__gpg} --force-v3-sigs --verbose --no-armor --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
 
       - name: Sign the RPM package
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
@@ -127,15 +150,10 @@ jobs:
           RPM_PATH=$(find ./RPMS/x86_64/ -name "*.rpm")
           echo "RPM found at: ${RPM_PATH}"
           
-          # Use a temporary script to handle the passphrase piping cleanly
-          # This avoids issues with direct piping to rpmsign in some shells
-          echo "#!/bin/bash" > sign-rpm.sh
-          echo "rpmsign --addsign \"\$1\"" >> sign-rpm.sh
-          chmod +x sign-rpm.sh
+          rpmsign --addsign "${RPM_PATH}"
           
-          # Use 'expect' or just simple pipe. Let's try simple pipe again but with explicit GPG_TTY
-          export GPG_TTY=$(tty)
-          echo "$GPG_PASSPHRASE" | ./sign-rpm.sh "${RPM_PATH}"
+          # Cleanup
+          rm -f /tmp/gpg-passphrase /tmp/gpg-wrapper.sh
 
       - name: Upload RPM Artifact
         uses: actions/upload-artifact@v4
