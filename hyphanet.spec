@@ -41,7 +41,7 @@
 
 Name:           hyphanet
 Version:        %{version}
-Release:        %{build_id}.3
+Release:        %{build_id}.4
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
@@ -192,5 +192,5 @@ fi
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
-* Fri Feb 27 2026 Ton Nom <hernicatgmail.com> - 0.7.5-1506.1
+* Fri Feb 27 2026 Ton Nom <hernicatgmail.com> - 0.7.5-1506.5
 - Initial build of the package
