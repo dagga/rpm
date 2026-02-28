@@ -1,3 +1,24 @@
+  /*
+    * This file is part of the Hyphanet RPM packaging project.
+    *
+    * Copyright (c) 2026 nicolas hernandez <hernicatgmail.com>
+    *
+    * This program is free software; you can redistribute it and/or modify
+    * it under the terms of the GNU General Public License as published by
+    * the Free Software Foundation; either version 2 of the License, or
+    * (at your option) any later version.
+    *
+    * This program is distributed in the hope that it will be useful,
+    * but WITHOUT ANY WARRANTY; without even the implied warranty of
+    * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    * GNU General Public License for more details.
+    *
+    * You should have received a copy of the GNU General Public License
+    * along with this program; if not, write to the Free Software
+    
+    * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+    */
+
 name: Build and Sign RPM
 
 on:
@@ -132,22 +153,11 @@ jobs:
           EOF
           chmod +x /tmp/gpg-wrapper.sh
           
-          # Verify the wrapper works
-          echo "Verifying GPG wrapper..."
-          echo "test" | /tmp/gpg-wrapper.sh -u "$GPG_KEY_NAME" --sign -o /dev/null
-          if [ $? -ne 0 ]; then
-             echo "CRITICAL: GPG wrapper failed to sign!"
-             exit 1
-          fi
-          
           echo "%_gpg_name $GPG_KEY_NAME" > ~/.rpmmacros
           echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
           
           # Explicitly use the wrapper script in the sign command
           echo "%__gpg_sign_cmd /tmp/gpg-wrapper.sh --force-v3-sigs --verbose --no-armor --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
-          
-          # Debug: show macros
-          cat ~/.rpmmacros
 
       - name: Sign the RPM package
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
