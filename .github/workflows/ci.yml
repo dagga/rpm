@@ -42,12 +42,16 @@ jobs:
         id: setup_gpg
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
         run: |
-          # Configure GPG for non-interactive use
-          mkdir -p ~/.gnupg
-          echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
-          echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
-          chmod 700 ~/.gnupg
-          gpg-connect-agent reloadagent /bye
+          # Function to configure GPG
+          configure_gpg() {
+            mkdir -p ~/.gnupg
+            echo "allow-loopback-pinentry" >> ~/.gnupg/gpg-agent.conf
+            echo "pinentry-mode loopback" >> ~/.gnupg/gpg.conf
+            chmod 700 ~/.gnupg
+            gpg-connect-agent reloadagent /bye
+          }
+          
+          configure_gpg
 
           USE_GENERATED_KEY=false
           
@@ -70,9 +74,10 @@ jobs:
             if [ $GPG_EXIT_CODE -eq 0 ]; then
                echo "SUCCESS: Existing key is valid and usable."
             else
-               echo "ERROR: Existing key is unusable (exit code $GPG_EXIT_CODE). Switching to auto-generation."
-               gpg --batch --yes --delete-secret-keys "$GPG_KEY_NAME" || true
-               gpg --batch --yes --delete-keys "$GPG_KEY_NAME" || true
+               echo "ERROR: Existing key is unusable (exit code $GPG_EXIT_CODE). Wiping GPG and switching to auto-generation."
+               # Nuke GPG home to ensure clean state
+               rm -rf ~/.gnupg
+               configure_gpg
                USE_GENERATED_KEY=true
             fi
           else
@@ -104,11 +109,10 @@ jobs:
           echo "GPG_KEY_NAME=$GPG_KEY_NAME" >> $GITHUB_ENV
           echo "GPG_PASSPHRASE=$PASSPHRASE" >> $GITHUB_ENV
           
-          # Export public key for artifacts AND for RPM import
+          # Export public key for artifacts
           gpg --export -a "$GPG_KEY_NAME" > public.key
           
-          # Import the key into RPM database
-          echo "Importing public key into RPM database..."
+          # Import the key into RPM database (just in case)
           sudo rpm --import public.key
 
       - name: Configure RPM GPG Key
@@ -138,10 +142,12 @@ jobs:
           
           echo "%_gpg_name $GPG_KEY_NAME" > ~/.rpmmacros
           echo "%_gpg_path /home/runner/.gnupg" >> ~/.rpmmacros
-          echo "%_gpgbin /tmp/gpg-wrapper.sh" >> ~/.rpmmacros
           
-          # Simplified macro using the wrapper
-          echo "%__gpg_sign_cmd %{__gpg} --force-v3-sigs --verbose --no-armor --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
+          # Explicitly use the wrapper script in the sign command
+          echo "%__gpg_sign_cmd /tmp/gpg-wrapper.sh --force-v3-sigs --verbose --no-armor --no-secmem-warning -u \"%{_gpg_name}\" -sbo %{__signature_filename} --digest-algo sha256 %{__plaintext_filename}" >> ~/.rpmmacros
+          
+          # Debug: show macros
+          cat ~/.rpmmacros
 
       - name: Sign the RPM package
         if: (github.event_name == 'push' && github.ref == 'refs/heads/master') || github.event_name == 'workflow_dispatch'
