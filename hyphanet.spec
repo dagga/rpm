@@ -37,11 +37,11 @@
 
 # Default values if not provided by rpmbuild command line
 %{!?version: %define version 0.7.5}
-%{!?build_id: %define build_id 1506}
+%{!?build_id: %define build_id 1507}
 
 Name:           hyphanet
 Version:        %{version}
-Release:        %{build_id}.4
+Release:        %{build_id}.1
 Summary:        Anonymizing peer-to-peer network (Hyphanet/Freenet)
 
 License:        GPLv2+
@@ -192,5 +192,8 @@ fi
 %ghost %{data_dir}/seednodes.fref
 
 %changelog
+* Thu Oct 29 2026 nicolas hernandez <hernicatgmail.com> - 0.7.5-01507.1
+- Update to Hyphanet build 1507
+
 * Fri Feb 27 2026 Ton Nom <hernicatgmail.com> - 0.7.5-1506.5
 - Initial build of the package

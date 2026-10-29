@@ -30,7 +30,7 @@ plugins {
 // --- Project Configuration ---
 val appVersion = "0.7.5"
 // Build ID must match the GitHub release tag (e.g. 01505)
-val buildId = "01506"
+val buildId = "01507"
 
 // The project root IS the rpmbuild root
 val rpmBuildRoot = layout.projectDirectory
@@ -41,9 +41,10 @@ data class Downloadable(val name: String, val url: String, val sha256: String)
 
 val artifacts = listOf(
     // Hyphanet JARs and Signature
-    Downloadable("freenet.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar", "81339fbc0273eb5d6614e152e6447eb37f83316e3fa3265172c01b01291772f2"),
-    Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar.sig", "71e3f54e9fa3dbe843f63b81dfdb4925681620ba3b41b04cf0a946675aba2d16"),
-    Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-ext.jar", "32f2b3d6beedf54137ea2f9a3ebef67666d769f0966b08cd17fd7db59ba4d79f"),
+    Downloadable("freenet.jar", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar", "7ab7d1f36a4e0a72b72a36d9f1e1ec40f169df08b398ce26449e07621a3db60d"),
+    Downloadable("freenet.jar.sig", "https://github.com/hyphanet/fred/releases/download/build${buildId}/freenet-build${buildId}.jar.sig", "25b1d5f60d5c35354adcebee02e2cb5bc093e15cc50bd008e4ffeeab3e79dcb4"),
+    // freenet-ext (v29) is no longer attached to fred releases since build01507: pinned to the last release shipping it
+    Downloadable("freenet-ext.jar", "https://github.com/hyphanet/fred/releases/download/build01506/freenet-ext.jar", "32f2b3d6beedf54137ea2f9a3ebef67666d769f0966b08cd17fd7db59ba4d79f"),
     
     // Official Hyphanet Keyring for verification
     Downloadable("keyring.gpg", "https://www.hyphanet.org/assets/keyring.gpg", "e8a4afdc5eaf0f3b36955cf8df22368a8bd1eda3eb1d286735e777e721025998"),
@@ -68,6 +69,7 @@ tasks.register("downloadAssets") {
     description = "Downloads and verifies external assets"
     
     val outputDir = downloadsDir.get().asFile
+    val offlineDir = layout.projectDirectory.dir("offline").asFile
     outputs.dir(outputDir)
 
     doLast {
@@ -108,6 +110,13 @@ tasks.register("downloadAssets") {
                 } catch (e: Exception) {
                     println("WARNING: Download failed for ${artifact.name}: ${e.message}")
                 }
+            }
+
+            // Fall back to the copy shipped in offline/ when the download failed
+            val offlineFile = File(offlineDir, artifact.name)
+            if (!file.exists() && offlineFile.exists()) {
+                println("Using offline copy of ${artifact.name}")
+                offlineFile.copyTo(file)
             }
 
             if (file.exists()) {
