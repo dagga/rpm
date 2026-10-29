@@ -69,6 +69,7 @@ tasks.register("downloadAssets") {
     description = "Downloads and verifies external assets"
     
     val outputDir = downloadsDir.get().asFile
+    val offlineDir = layout.projectDirectory.dir("offline").asFile
     outputs.dir(outputDir)
 
     doLast {
@@ -109,6 +110,13 @@ tasks.register("downloadAssets") {
                 } catch (e: Exception) {
                     println("WARNING: Download failed for ${artifact.name}: ${e.message}")
                 }
+            }
+
+            // Fall back to the copy shipped in offline/ when the download failed
+            val offlineFile = File(offlineDir, artifact.name)
+            if (!file.exists() && offlineFile.exists()) {
+                println("Using offline copy of ${artifact.name}")
+                offlineFile.copyTo(file)
             }
 
             if (file.exists()) {
