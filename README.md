@@ -120,7 +120,7 @@ When a new version of Hyphanet is released, follow this procedure to update the 
     *   Change `appVersion` to the new version number (e.g., `"0.7.6"`).
     *   Change `buildId` to the new build tag (e.g., `"01507"`).
 3.  **Update Checksums**:
-    *   The URLs for `freenet.jar`, `freenet.jar.sig`, and `freenet-ext.jar` are automatically constructed using the `buildId`.
+    *   The URLs for `freenet.jar` and `freenet.jar.sig` are automatically constructed using the `buildId`. `freenet-ext.jar` is pinned to build01506, the last release that ships it as an asset.
     *   However, you **must** update the `sha256` hash for these artifacts in the `artifacts` list.
     *   *Tip*: You can temporarily set the hash to an empty string `""` or a dummy value, run the build, and copy the calculated hash from the error message or warning in the console output.
 4.  **Verify Dependencies**:
@@ -131,7 +131,7 @@ When a new version of Hyphanet is released, follow this procedure to update the 
     *   Look for:
         ```spec
         %{!?version: %define version 0.7.5}
-        %{!?build_id: %define build_id 1506}
+        %{!?build_id: %define build_id 1507}
         ```
 6.  **Run the Build**:
     ```bash
